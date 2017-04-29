@@ -79,8 +79,8 @@ class DataLoader(object):
 
     def get_data_for_pca(self):
         print("Loading data")
-        question_sentences_tuples, answer_sentences_tuples = self._read_raw_xml_data_general(self.data_path_train_1)
-        question_sentences_tuples_valid, answer_sentences_tuples_valid = self._read_raw_xml_data_general(self.data_path_validation)
+        question_sentences_tuples, answer_sentences_tuples, answer_labels_train = self._read_raw_xml_data_general(self.data_path_train_1)
+        question_sentences_tuples_valid, answer_sentences_tuples_valid, answer_labels_valid = self._read_raw_xml_data_general(self.data_path_validation)
 
         question_sentences = [q_tuple[1]['category'] + q_tuple[1]['subject'] + q_tuple[1]['question']
                               for q_tuple in question_sentences_tuples]
@@ -111,13 +111,17 @@ class DataLoader(object):
         for i, sentence in enumerate(sentences_valid):
             for word in sentence:
                 data_valid[i, vocabulary[word]] = 1
+
+        y_train = np.array(answer_labels_train)
+        y_valid = np.array(answer_labels_valid)
         print("Done loading data")
-        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid
+        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid
 
 
     def _read_raw_xml_data_general(self, data_path):
         question_sentences = []
         answer_sentences = []
+        answer_labels = []
         tree = ET.parse(data_path)
         xml = tree.getroot()
         for thread in xml:
@@ -141,8 +145,9 @@ class DataLoader(object):
                         'answer': answer_sentence
                     }
                     answer_sentences.append((rel.attrib['RELC_ID'], answer_info))
+                    answer_labels.append(1 if rel.attrib['RELC_RELEVANCE2RELQ'].lower() == 'good' else 0)
 
-        return question_sentences, answer_sentences
+        return question_sentences, answer_sentences, answer_labels
 
     def _read_raw_xml_data(self, data_path):
         ids = []

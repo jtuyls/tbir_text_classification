@@ -16,7 +16,7 @@ class PCA_analysis(object):
 
 
     def run(self, n_components, downsampling=None):
-        data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid = self.data_loader.get_data_for_pca()
+        data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, _, _ = self.data_loader.get_data_for_pca()
         print(data_train)
 
         if downsampling:
