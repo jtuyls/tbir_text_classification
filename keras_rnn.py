@@ -104,7 +104,7 @@ preds = layers.Dense(2, activation='softmax')(merged)
 #optimizer = keras.optimizers.RMSprop(lr=0.00001, rho=0.9, epsilon=1e-08, decay=0.0)
 optimizer = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 model = Model([question, answer], preds)
-model.compile(optimizer='adam',
+model.compile(optimizer=optimizer,
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
