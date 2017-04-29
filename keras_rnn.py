@@ -76,8 +76,8 @@ print('input_shape_A: {}'.format(input_shape_A))
 
 # ADJUSTED NETWORK
 EMBED_HIDDEN_SIZE = 50
-RNN_SIZE = 50
-BATCH_SIZE = 32
+RNN_SIZE = 200
+BATCH_SIZE = 64
 
 question = layers.Input(shape=(input_shape_Q,), dtype='int32')
 encoded_question = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(question)
