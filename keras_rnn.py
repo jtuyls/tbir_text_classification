@@ -127,6 +127,6 @@ print(pred_valid)
 print(confidence_scores)
 print(predictions)
 
-validation_ids = d.get_validation_ids()
+validation_ids = d.get_test_ids()
 
 write_predictions_to_file(predictions, confidence_scores, validation_ids, "scorer/test_rnn.pred")
