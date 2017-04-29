@@ -15,8 +15,11 @@ class PCA_analysis(object):
         self.data_loader = data_loader
 
 
-    def run(self, n_components, downsampling=None):
-        data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, _, _ = self.data_loader.get_data_for_pca()
+    def run(self, n_components, downsampling=None, test=False):
+        if test == False:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, _, _ = self.data_loader.get_data_for_pca()
+        else:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, _, _ = self.data_loader.get_data_for_pca_test()
         print(data_train)
 
         if downsampling:
@@ -31,8 +34,12 @@ class PCA_analysis(object):
 
         #self.visualize_pca(X_r=X_r, idx=q_idx_train+a_idx_train)
 
+
         X_v = pca.transform(data_valid)
         #X_v = data_valid
+        #print(data_valid.shape)
+        #print(q_idx_valid)
+        #print(a_idx_valid)
 
         # calculate confidence scores as norms
         conf_scores = []

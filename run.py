@@ -3,7 +3,7 @@ from data_loader import DataLoader
 from network_multiple_input import NetworkMI
 from network_pca import NetworkPCA
 
-scenario = 1
+scenario = 2
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',

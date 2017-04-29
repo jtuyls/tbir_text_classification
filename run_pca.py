@@ -8,7 +8,7 @@ data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml
                          'data/test_input.xml')
 pca_a = PCA_analysis(data_loader)
 
-scenario = 2
+scenario = 3
 
 if scenario == 1:
     X_r, idx_r, X_v, idx_v = pca_a.run(n_components=2, downsampling=None)
@@ -16,3 +16,7 @@ if scenario == 1:
 
 if scenario == 2:
     X_r, idx_r, X_v, idx_v = pca_a.run(n_components=16, downsampling=None)
+
+# TEST SCENARIO
+if scenario == 3:
+    X_r, idx_r, X_v, idx_v = pca_a.run(n_components=18, downsampling=None, test=True)

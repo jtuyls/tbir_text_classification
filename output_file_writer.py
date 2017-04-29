@@ -14,6 +14,7 @@ def write_predictions_to_file(pred, conf_scores, validation_ids, filename):
                                     conf_scores[i] if np.array_equal(pred[i], true_array) else (1 - conf_scores[i]),
                                     "true" if np.array_equal(pred[i], true_array) else "false"))
 
+
 def write_predictions_to_file_unsupervised(conf_scores, validation_ids, filename):
     if os.path.exists(filename):
         clean_file(filename)

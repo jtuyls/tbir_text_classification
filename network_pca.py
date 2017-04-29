@@ -35,9 +35,12 @@ class NetworkPCA(NetworkMI):
         print("End format transformation")
         return np.array(X_q), np.array(X_a)
 
-    def main(self, batch_size, num_epochs, validation_split=0.05):
-        data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid,\
-            self.y_train, self.y_test = self.data_loader.get_data_for_pca()
+    def main(self, batch_size, num_epochs, validation_split=0.05, test=False):
+        if test == False:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid,\
+                self.y_train, self.y_test = self.data_loader.get_data_for_pca()
+        else:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid = self.data_loader.get_data_for_pca_test()
 
 
         # Fit preprocessor
@@ -67,9 +70,9 @@ class NetworkPCA(NetworkMI):
                                                       X_train_Q=self.X_train_Q,
                                                       X_train_A=self.X_train_A,
                                                       y_train=self.y_train,
-                                                      X_valid_Q=self.X_test_Q,
-                                                      X_valid_A=self.X_test_A,
-                                                      y_valid=self.y_test,
+                                                      X_valid_Q=[],
+                                                      X_valid_A=[],
+                                                      y_valid=[],
                                                       XQ_=XQ_,
                                                       XA_=XA_,
                                                       y_=y_,
