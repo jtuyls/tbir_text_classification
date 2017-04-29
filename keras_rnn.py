@@ -26,7 +26,7 @@ EMBED_HIDDEN_SIZE = 50
 SENT_HIDDEN_SIZE = 100
 QUERY_HIDDEN_SIZE = 100
 BATCH_SIZE = 32
-EPOCHS = 40
+EPOCHS = 20
 print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN,
                                                            EMBED_HIDDEN_SIZE,
                                                            SENT_HIDDEN_SIZE,
