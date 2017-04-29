@@ -26,7 +26,7 @@ EMBED_HIDDEN_SIZE = 50
 SENT_HIDDEN_SIZE = 100
 QUERY_HIDDEN_SIZE = 100
 BATCH_SIZE = 32
-EPOCHS = 3
+EPOCHS = 40
 print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN,
                                                            EMBED_HIDDEN_SIZE,
                                                            SENT_HIDDEN_SIZE,
@@ -76,8 +76,8 @@ print('input_shape_A: {}'.format(input_shape_A))
 
 # ADJUSTED NETWORK
 EMBED_HIDDEN_SIZE = 50
-RNN_SIZE = 50
-BATCH_SIZE = 32
+RNN_SIZE = 100
+BATCH_SIZE = 64
 
 question = layers.Input(shape=(input_shape_Q,), dtype='int32')
 encoded_question = layers.Embedding(vocab_size, EMBED_HIDDEN_SIZE)(question)
@@ -102,7 +102,7 @@ preds = layers.Dense(2, activation='softmax')(merged)
 
 #optimizer = keras.optimizers.SGD(lr=0.0001, momentum=0.0, decay=0.0, nesterov=False)
 #optimizer = keras.optimizers.RMSprop(lr=0.00001, rho=0.9, epsilon=1e-08, decay=0.0)
-optimizer = keras.optimizers.Adam(lr=0.000001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+optimizer = keras.optimizers.Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 model = Model([question, answer], preds)
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',

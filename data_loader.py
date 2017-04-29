@@ -2,7 +2,6 @@ import re
 import itertools
 
 import numpy as np
-import tensorflow as tf
 import xml.etree.ElementTree as ET
 
 from collections import Counter
