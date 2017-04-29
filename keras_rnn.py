@@ -34,21 +34,20 @@ print('RNN / Embed / Sent / Query = {}, {}, {}, {}'.format(RNN,
 
 d = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
-               'data/SemEval2016-Task3-CQA-QL-dev-subtaskA.xml')
+               'data/SemEval2016-Task3-CQA-QL-dev-subtaskA.xml',
+               'data/test_input.xml')
 
-X_train_Q, X_train_A, y_train, X_valid_Q, X_valid_A, y_valid, vocab_size = d.get_data_separate_sentences()
+X_train_Q, X_train_A, y_train, X_valid_Q, X_valid_A, vocab_size = d.get_data_separate_sentences_test()
 
 print(y_train)
 y_train = to_categorical(y_train)
 print(y_train)
-y_valid = to_categorical(y_valid)
 
 print('X_train_Q.shape = {}'.format(X_train_Q.shape))
 print('X_train_A.shape = {}'.format(X_train_A.shape))
 print('y_train.shape = {}'.format(y_train.shape))
 print('X_valid_Q = {}'.format(X_valid_Q.shape))
 print('X_valid_A = {}'.format(X_valid_A.shape))
-print('y_valid.shape = {}'.format(y_valid.shape))
 print('vocabulary size: {}'.format(vocab_size))
 print('Build model...')
 
@@ -76,7 +75,7 @@ print('input_shape_A: {}'.format(input_shape_A))
 
 # ADJUSTED NETWORK
 EMBED_HIDDEN_SIZE = 50
-RNN_SIZE = 200
+RNN_SIZE = 100
 BATCH_SIZE = 64
 
 question = layers.Input(shape=(input_shape_Q,), dtype='int32')
@@ -114,9 +113,9 @@ model.fit([X_train_Q, X_train_A], y_train,
           epochs=EPOCHS,
           validation_split=0.05)
 
-loss, acc = model.evaluate([X_valid_Q, X_valid_A], y_valid,
-                           batch_size=BATCH_SIZE)
-print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+#loss, acc = model.evaluate([X_valid_Q, X_valid_A], y_valid,
+#                           batch_size=BATCH_SIZE)
+#print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
 # PREDICTIONS
 pred_valid = model.predict([X_valid_Q, X_valid_A], batch_size=BATCH_SIZE)
@@ -130,4 +129,4 @@ print(predictions)
 
 validation_ids = d.get_validation_ids()
 
-write_predictions_to_file(predictions, confidence_scores, validation_ids, "scorer/test.pred")
+write_predictions_to_file(predictions, confidence_scores, validation_ids, "scorer/test_rnn.pred")

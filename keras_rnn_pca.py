@@ -119,18 +119,20 @@ EMBED_HIDDEN_SIZE = 50
 RNN_SIZE = 50
 BATCH_SIZE = 32
 
-question = layers.Input(shape=(input_shape_Q,), dtype='int32')
+question = layers.Input(shape=(input_shape_Q,), dtype='float32')
 #encoded_question = layers.Embedding(20, EMBED_HIDDEN_SIZE)(question)
-encoded_question = layers.RepeatVector(input_shape_Q)(question)
-encoded_question = RNN(EMBED_HIDDEN_SIZE)(question)
+print(question)
+encoded_question = layers.core.Reshape((input_shape_Q, 1,))(question)
+print(encoded_question)
+encoded_question = RNN(EMBED_HIDDEN_SIZE)(encoded_question)
 encoded_question = layers.Dropout(0.3)(encoded_question)
 #encoded_question = RNN(RNN_SIZE)(encoded_question)
-#encoded_question = layers.RepeatVector(RNN_SIZE)(encoded_question)
+encoded_question = layers.RepeatVector(EMBED_HIDDEN_SIZE)(encoded_question)
 print(encoded_question)
 
-answer = layers.Input(shape=(input_shape_A,), dtype='int32')
+answer = layers.Input(shape=(input_shape_A,), dtype='float32')
 #encoded_answer = layers.Embedding(20, EMBED_HIDDEN_SIZE)(answer)
-encoded_answer = layers.RepeatVector(input_shape_A)(answer)
+encoded_answer = layers.core.Reshape((input_shape_Q, 1,))(answer)
 encoded_answer = RNN(EMBED_HIDDEN_SIZE)(encoded_answer)
 encoded_answer = layers.Dropout(0.3)(encoded_answer)
 print(encoded_answer)
@@ -172,4 +174,4 @@ print(predictions)
 
 validation_ids = d.get_validation_ids()
 
-write_predictions_to_file(predictions, confidence_scores, validation_ids, "scorer/test.pred")
+write_predictions_to_file(predictions, confidence_scores, validation_ids, "scorer/test_rnn_pca.pred")
