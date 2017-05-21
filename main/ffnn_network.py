@@ -136,7 +136,7 @@ class Network(object):
 
 
     def main(self, batch_size, num_epochs):
-        self.X_train, self.y_train, self.X_valid, self.y_valid = self.data_loader.get_data()
+        self.X_train, self.y_train, self.X_valid, self.y_valid, test_idx = self.data_loader.get_data()
         print(self.X_train)
 
         input_size = self.X_train.shape[1]
@@ -156,9 +156,9 @@ class Network(object):
                                          keep_prob=keep_prob,
                                          batch_size=batch_size,
                                          num_epochs=num_epochs)
+
         filename = "scorer/test.pred"
-        validation_ids = self.data_loader.get_validation_ids()
-        self.write_predictions_to_file(predictions, conf_scores, validation_ids, filename)
+        self.write_predictions_to_file(predictions, conf_scores, test_idx, filename)
 
     def write_predictions_to_file(self, pred, conf_scores, validation_ids, filename):
         if os.path.exists(filename):

@@ -6,9 +6,10 @@ import sklearn.metrics
 import numpy as np
 import tensorflow as tf
 
+from sklearn.model_selection import ShuffleSplit
 
 
-from network import Network
+from main.ffnn_network import Network
 
 
 class NetworkMI(Network):
@@ -88,8 +89,12 @@ class NetworkMI(Network):
                 excerpt = slice(start_idx, start_idx + batchsize)
             yield inputs[excerpt], inputs2[excerpt], targets[excerpt]
 
-    def train_network(self, network_pred, X_train_Q, X_train_A, y_train, X_valid_Q, X_valid_A, y_valid, XQ_, XA_, y_,
-                      keep_prob, batch_size, num_epochs=100):
+    def train_network(self, network_pred,
+                      X_train_Q, X_train_A, y_train,
+                      X_valid_Q, X_valid_A, y_valid,
+                      XQ_, XA_, y_, keep_prob_,
+                      X_test_Q, X_test_A,
+                      batch_size, dropout=0.1, num_epochs=100):
         y_ = tf.to_int64(y_)
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
             labels=y_, logits=network_pred, name='xentropy')
@@ -114,13 +119,13 @@ class NetworkMI(Network):
                 train_err = 0
                 train_batches = 0
                 for batch in self.iterate_minibatches(X_train_Q, X_train_A, y_train, batch_size, shuffle=True):
-                    _, c, pred = sess.run([optimizer, loss, network_pred], feed_dict={XQ_: batch[0], XA_: batch[1], y_: batch[2], keep_prob: .9})
+                    _, c, pred = sess.run([optimizer, loss, network_pred], feed_dict={XQ_: batch[0], XA_: batch[1], y_: batch[2], keep_prob_: 1-dropout})
                     #print(sess.run(tf.nn.softmax(pred)))
                     #print(sess.run(tf.one_hot(batch[1], 2)))
                     train_err += c
                     train_batches += 1
 
-                pred_train = sess.run(network_pred, feed_dict={XQ_: X_train_Q, XA_: X_train_A, y_: y_train, keep_prob: 1.})
+                pred_train = sess.run(network_pred, feed_dict={XQ_: X_train_Q, XA_: X_train_A, y_: y_train, keep_prob_: 1.})
                 predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), sess.run(tf.one_hot(y_train, 2))
                 train_acc = np.mean(predictions == targets)
                 train_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
@@ -128,12 +133,12 @@ class NetworkMI(Network):
                 val_err = 0
                 val_batches = 0
                 for batch in self.iterate_minibatches(X_valid_Q, X_valid_A, y_valid, batch_size, shuffle=True):
-                    c, pred = sess.run([loss, network_pred], feed_dict={XQ_: batch[0], XA_: batch[1], y_: batch[2], keep_prob: 1.})
+                    c, pred = sess.run([loss, network_pred], feed_dict={XQ_: batch[0], XA_: batch[1], y_: batch[2], keep_prob_: 1.})
                     val_err += c
                     #val_acc += np.mean(np.round(sess.run(tf.nn.softmax(pred))) == sess.run(tf.one_hot(batch[1], 2)))
                     val_batches += 1
 
-                pred_valid = sess.run(network_pred, feed_dict={XQ_: X_valid_Q, XA_: X_valid_A, y_: y_valid, keep_prob: 1.})
+                pred_valid = sess.run(network_pred, feed_dict={XQ_: X_valid_Q, XA_: X_valid_A, y_: y_valid, keep_prob_: 1.})
                 predictions, targets = np.round(sess.run(tf.nn.softmax(pred_valid))), sess.run(tf.one_hot(y_valid, 2))
                 val_acc = np.mean(predictions == targets)
                 val_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
@@ -148,47 +153,67 @@ class NetworkMI(Network):
                 print("  validation f1: \t\t{:.2f}".format(val_f1))
             print("Stop training")
 
-            pred_valid = sess.run(network_pred, feed_dict={XQ_: X_valid_Q, XA_: X_valid_A, y_: y_valid, keep_prob: 1.})
-            confidence_scores = np.amax(sess.run(tf.nn.softmax(pred_valid)), axis=1)
-            predictions = np.round(sess.run(tf.nn.softmax(pred_valid)))
+            pred_test = sess.run(network_pred, feed_dict={XQ_: X_test_Q, XA_: X_test_A, keep_prob_: 1.})
+            confidence_scores = np.amax(sess.run(tf.nn.softmax(pred_test)), axis=1)
+            predictions = np.round(sess.run(tf.nn.softmax(pred_test)))
             return predictions, confidence_scores
 
 
-    def main(self, batch_size, num_epochs, validation_split=0.05):
-        self.X_train_Q, self.X_train_A, self.y_train, self.X_test_Q, \
-            self.X_test_A, self.y_test, _ = self.data_loader.get_data_separate_sentences()
-        print(self.X_train_Q)
+    def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.20,
+             prediction_filename="scorer/ffnn_supervised.pred", test=False):
+        if test:
+            X_train_Q, X_train_A, y_train, X_test_Q, \
+                X_test_A, y_test, test_idx, _ = self.data_loader.get_data_separate_sentences_test()
+        else:
+            X_train_Q, X_train_A, y_train, X_test_Q, \
+                X_test_A, y_test, test_idx, _ = self.data_loader.get_data_separate_sentences()
+        print("Length training dataset: {}".format(X_train_Q.shape[0]))
+        print("Length test dataset: {}".format(X_test_Q.shape[0]))
 
-        # Validation
-        #validation_split_nb = int((1-validation_split)*len(self.X_train_Q))
-        #self.self.X_train_Q = self.self.X_train_Q[:validation_split_nb]
-        #self.self.X_train_A = self.self.X_train_Q[:validation_split_nb]
+        # Shuffled split of training data in training set and validation set
+        rs = ShuffleSplit(test_size=validation_split)
+        for train_idx, valid_idx in rs.split(X_train_Q):
+            pass
+        print(len(train_idx), len(valid_idx))
+        self.X_train_Q = X_train_Q[train_idx]
+        self.X_train_A = X_train_A[train_idx]
+        self.y_train = y_train[train_idx]
 
+        self.X_valid_Q = X_train_Q[valid_idx]
+        self.X_valid_A = X_train_A[valid_idx]
+        self.y_valid = y_train[valid_idx]
+
+        self.X_test_Q = X_test_Q
+        self.X_test_A = X_test_A
+
+        # Define input placeholders
         input_size_Q = self.X_train_Q.shape[1]
         input_size_A = self.X_train_A.shape[1]
         XQ_ = tf.placeholder(tf.float32, shape=(None, input_size_Q))
         XA_ = tf.placeholder(tf.float32, shape=(None, input_size_A))
         y_ = tf.placeholder(tf.int32, shape=(None))
-        keep_prob = tf.placeholder(tf.float32)
+        keep_prob_ = tf.placeholder(tf.float32)
 
-        network_pred = self.build_network(input_size_Q=input_size_Q, input_size_A=input_size_A, XQ_=XQ_, XA_=XA_, keep_prob=keep_prob)
+        network_pred = self.build_network(input_size_Q=input_size_Q, input_size_A=input_size_A, XQ_=XQ_, XA_=XA_, keep_prob=keep_prob_)
 
         predictions, conf_scores = self.train_network(network_pred=network_pred,
                                                       X_train_Q=self.X_train_Q,
                                                       X_train_A=self.X_train_A,
                                                       y_train=self.y_train,
-                                                      X_valid_Q=self.X_test_Q,
-                                                      X_valid_A=self.X_test_A,
-                                                      y_valid=self.y_test,
+                                                      X_valid_Q=self.X_valid_Q,
+                                                      X_valid_A=self.X_valid_A,
+                                                      y_valid=self.y_valid,
                                                       XQ_=XQ_,
                                                       XA_=XA_,
                                                       y_=y_,
-                                                      keep_prob=keep_prob,
+                                                      X_test_Q=self.X_test_Q,
+                                                      X_test_A=self.X_test_A,
+                                                      keep_prob_=keep_prob_,
                                                       batch_size=batch_size,
+                                                      dropout=dropout,
                                                       num_epochs=num_epochs)
-        filename = "scorer/test.pred"
-        validation_ids = self.data_loader.get_validation_ids()
-        self.write_predictions_to_file(predictions, conf_scores, validation_ids, filename)
+
+        self.write_predictions_to_file(predictions, conf_scores, test_idx, prediction_filename)
 
 
 

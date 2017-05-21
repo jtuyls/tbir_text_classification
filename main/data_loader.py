@@ -16,24 +16,14 @@ class DataLoader(object):
         self.data_path_train_2 = data_path_train_2
         self.data_path_validation = data_path_validation
         self.data_path_test = data_path_test
-        self.validation_ids = None
-        self.test_ids = None
 
-    def get_validation_ids(self):
-        if not self.validation_ids:
-            _, _, self.validation_ids = self._read_raw_xml_data(self.data_path_validation)
-        return self.validation_ids
-
-    def get_test_ids(self):
-        if not self.test_ids:
-            _, _, self.test_ids = self._read_raw_xml_data(self.data_path_test)
-        return self.test_ids
+    #### GET DATA FOR CLASSIFICATION ####
 
     def get_data(self):
         print("Load data")
         sentences_train_1, labels_train_1, _ = self._read_raw_xml_data(self.data_path_train_1)
         sentences_train_2, labels_train_2, _ = self._read_raw_xml_data(self.data_path_train_2)
-        sentences_valid, labels_valid, self.validation_ids = self._read_raw_xml_data(self.data_path_validation)
+        sentences_valid, labels_valid, validation_idx = self._read_raw_xml_data(self.data_path_validation)
 
         padded_sentences = self._pad_sentences(sentences_train_1 + sentences_train_2 + sentences_valid)
         padded_sentences_train = padded_sentences[:(len(sentences_train_1)+len(sentences_train_2))]
@@ -51,20 +41,22 @@ class DataLoader(object):
         print(len([True for x in y_valid if x == 1]), len([True for x in y_valid if x == 0]))
 
         print("Done loading data")
-        return X_train, y_train, X_valid, y_valid
+        return X_train, y_train, X_valid, y_valid, validation_idx
 
     def get_data_separate_sentences(self):
         print("Load data")
         Q_sentences_train, A_sentences_train, labels_train, _ = self._read_raw_xml_data_separate_sentences(self.data_path_train_1)
-        Q_sentences_valid, A_sentences_valid, labels_valid, self.validation_ids = self._read_raw_xml_data_separate_sentences(self.data_path_validation)
+        Q_sentences_train_2, A_sentences_train_2, labels_train_2, _ = self._read_raw_xml_data_separate_sentences(
+            self.data_path_train_2)
+        Q_sentences_valid, A_sentences_valid, labels_valid, validation_idx = self._read_raw_xml_data_separate_sentences(self.data_path_validation)
 
-        Q_padded_sentences = self._pad_sentences(Q_sentences_train + Q_sentences_valid)
-        Q_sentences_train_padded = Q_padded_sentences[:len(Q_sentences_train)]
-        Q_sentences_valid_padded = Q_padded_sentences[len(Q_sentences_train):]
+        Q_padded_sentences = self._pad_sentences(Q_sentences_train + Q_sentences_train_2 + Q_sentences_valid)
+        Q_sentences_train_padded = Q_padded_sentences[:len(Q_sentences_train) + len(Q_sentences_train_2)]
+        Q_sentences_valid_padded = Q_padded_sentences[len(Q_sentences_train) + len(Q_sentences_train_2):]
 
-        A_padded_sentences = self._pad_sentences(A_sentences_train + A_sentences_valid)
-        A_sentences_train_padded = A_padded_sentences[:len(A_sentences_train)]
-        A_sentences_valid_padded = A_padded_sentences[len(A_sentences_train):]
+        A_padded_sentences = self._pad_sentences(A_sentences_train + A_sentences_train_2 + A_sentences_valid)
+        A_sentences_train_padded = A_padded_sentences[:len(A_sentences_train) + len(A_sentences_train_2)]
+        A_sentences_valid_padded = A_padded_sentences[len(A_sentences_train) + len(A_sentences_train_2):]
 
         all_sentences = Q_sentences_train_padded + A_sentences_train_padded + Q_sentences_valid_padded + A_sentences_valid_padded
         vocabulary, vocabulary_inv = self._build_vocab(all_sentences)
@@ -72,7 +64,7 @@ class DataLoader(object):
 
         X_train_Q = np.array([[vocabulary[word] for word in sentence] for sentence in Q_sentences_train_padded])
         X_train_A = np.array([[vocabulary[word] for word in sentence] for sentence in A_sentences_train_padded])
-        y_train = np.array(labels_train)
+        y_train = np.array(labels_train + labels_train_2)
         print(len([True for x in y_train if x == 1]), len([True for x in y_train if x == 0]))
         #
         X_valid_Q = np.array([[vocabulary[word] for word in sentence] for sentence in Q_sentences_valid_padded])
@@ -81,24 +73,31 @@ class DataLoader(object):
         print(len([True for x in y_valid if x == 1]), len([True for x in y_valid if x == 0]))
 
         print("Done loading data")
-        return X_train_Q, X_train_A, y_train, X_valid_Q, X_valid_A, y_valid, vocabulary_size
+        return X_train_Q, X_train_A, y_train, X_valid_Q, X_valid_A, y_valid, validation_idx, vocabulary_size
 
     def get_data_separate_sentences_test(self):
         print("Load data")
+        # Load training data
         Q_sentences_train, A_sentences_train, labels_train, _ = self._read_raw_xml_data_separate_sentences(
             self.data_path_train_1)
-        Q_sentences_valid, A_sentences_valid, labels_valid, self.validation_ids = self._read_raw_xml_data_separate_sentences(
+        Q_sentences_train_2, A_sentences_train_2, labels_train_2, _ = self._read_raw_xml_data_separate_sentences(
+            self.data_path_train_2)
+
+        # Load validation data
+        Q_sentences_valid, A_sentences_valid, labels_valid, validation_idx = self._read_raw_xml_data_separate_sentences(
             self.data_path_validation)
-        Q_sentences_test, A_sentences_test, labels_test, self.test_ids = self._read_raw_xml_data_separate_sentences(
+
+        # Load test data
+        Q_sentences_test, A_sentences_test, labels_test, test_idx = self._read_raw_xml_data_separate_sentences(
             self.data_path_test)
 
-        Q_padded_sentences = self._pad_sentences(Q_sentences_train + Q_sentences_valid + Q_sentences_test)
-        Q_sentences_train_padded = Q_padded_sentences[:(len(Q_sentences_train) + len(Q_sentences_valid))]
-        Q_sentences_test_padded = Q_padded_sentences[(len(Q_sentences_train) + len(Q_sentences_valid)):]
+        Q_padded_sentences = self._pad_sentences(Q_sentences_train + Q_sentences_train_2 + Q_sentences_valid + Q_sentences_test)
+        Q_sentences_train_padded = Q_padded_sentences[:(len(Q_sentences_train) + len(Q_sentences_train_2) + len(Q_sentences_valid))]
+        Q_sentences_test_padded = Q_padded_sentences[(len(Q_sentences_train) + len(Q_sentences_train_2) + len(Q_sentences_valid)):]
 
-        A_padded_sentences = self._pad_sentences(A_sentences_train + A_sentences_valid + A_sentences_test)
-        A_sentences_train_padded = A_padded_sentences[:(len(A_sentences_train) + len(A_sentences_valid))]
-        A_sentences_test_padded = A_padded_sentences[(len(A_sentences_train) + len(A_sentences_valid)):]
+        A_padded_sentences = self._pad_sentences(A_sentences_train + A_sentences_train_2 + A_sentences_valid + A_sentences_test)
+        A_sentences_train_padded = A_padded_sentences[:(len(A_sentences_train) + len(A_sentences_train_2) + len(A_sentences_valid))]
+        A_sentences_test_padded = A_padded_sentences[(len(A_sentences_train) + len(A_sentences_train_2) + len(A_sentences_valid)):]
 
         all_sentences = Q_sentences_train_padded + A_sentences_train_padded + Q_sentences_test_padded + A_sentences_test_padded
         vocabulary, vocabulary_inv = self._build_vocab(all_sentences)
@@ -106,15 +105,16 @@ class DataLoader(object):
 
         X_train_Q = np.array([[vocabulary[word] for word in sentence] for sentence in Q_sentences_train_padded])
         X_train_A = np.array([[vocabulary[word] for word in sentence] for sentence in A_sentences_train_padded])
-        y_train = np.array(labels_train + labels_valid)
+        y_train = np.array(labels_train + labels_train_2 + labels_valid)
         print(len([True for x in y_train if x == 1]), len([True for x in y_train if x == 0]))
         #
         X_test_Q = np.array([[vocabulary[word] for word in sentence] for sentence in Q_sentences_test_padded])
         X_test_A = np.array([[vocabulary[word] for word in sentence] for sentence in A_sentences_test_padded])
 
         print("Done loading data")
-        return X_train_Q, X_train_A, y_train, X_test_Q, X_test_A, vocabulary_size
+        return X_train_Q, X_train_A, y_train, X_test_Q, X_test_A, None, test_idx, vocabulary_size
 
+    #### GET DATA FOR PCA ####
     def get_data_for_pca(self):
         print("Loading data")
         question_sentences_tuples, answer_sentences_tuples, answer_labels_train = self._read_raw_xml_data_general(self.data_path_train_1)
@@ -152,8 +152,10 @@ class DataLoader(object):
 
         y_train = np.array(answer_labels_train)
         y_valid = np.array(answer_labels_valid)
+
+        _, _, test_idx = self._read_raw_xml_data(self.data_path_validation)
         print("Done loading data")
-        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid
+        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid, test_idx
 
     def get_data_for_pca_two_datasets(self):
         print("Loading data")
@@ -195,8 +197,10 @@ class DataLoader(object):
 
         y_train = np.array(answer_labels_train)
         y_valid = np.array(answer_labels_valid)
+
+        _, _, test_idx = self._read_raw_xml_data(self.data_path_validation)
         print("Done loading data")
-        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid
+        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid, test_idx
 
     def get_data_for_pca_test(self):
         print("Loading data")
@@ -241,8 +245,12 @@ class DataLoader(object):
 
         y_train = np.array(answer_labels_train)
         y_valid = np.array(answer_labels_valid)
+
+        _, _, test_idx = self._read_raw_xml_data(self.data_path_test)
         print("Done loading data")
-        return data_train, data_test, q_idx, a_idx, q_idx_test, a_idx_test, y_train, y_valid
+        return data_train, data_test, q_idx, a_idx, q_idx_test, a_idx_test, y_train, y_valid, test_idx
+
+    #### HELPER FUNCTIONS ####
 
     def _read_raw_xml_data_general(self, data_path):
         question_sentences = []

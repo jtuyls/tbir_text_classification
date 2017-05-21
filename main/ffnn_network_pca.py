@@ -4,7 +4,7 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 
-from network_multiple_input import NetworkMI
+from main.ffnn_network_multiple_input import NetworkMI
 
 
 class NetworkPCA(NetworkMI):
@@ -38,9 +38,10 @@ class NetworkPCA(NetworkMI):
     def main(self, batch_size, num_epochs, validation_split=0.05, test=False):
         if test == False:
             data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid,\
-                self.y_train, self.y_test = self.data_loader.get_data_for_pca()
+                self.y_train, self.y_test, test_idx = self.data_loader.get_data_for_pca()
         else:
-            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid = self.data_loader.get_data_for_pca_test()
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid,\
+                test_idx = self.data_loader.get_data_for_pca_test()
 
 
         # Fit preprocessor
@@ -79,6 +80,6 @@ class NetworkPCA(NetworkMI):
                                                       keep_prob=keep_prob,
                                                       batch_size=batch_size,
                                                       num_epochs=num_epochs)
+
         filename = "scorer/test_sup_pca.pred"
-        validation_ids = self.data_loader.get_validation_ids()
-        self.write_predictions_to_file(predictions, conf_scores, validation_ids, filename)
+        self.write_predictions_to_file(predictions, conf_scores, test_idx, filename)
