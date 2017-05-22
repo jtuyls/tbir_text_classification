@@ -6,7 +6,7 @@ from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 
-scenario = 6.1
+scenario = 6.6
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
