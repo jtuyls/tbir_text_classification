@@ -41,8 +41,12 @@ if scenario == 5.0:
 # Run on test dataset
 if scenario == 6.0:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=1, test=True,
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=20, test=True,
                             prediction_filename="scorer/scenario_6_0.pred")
+if scenario == 6.0.0:
+    keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=40, test=True,
+                           prediction_filename="scorer/scenario_6_0_0.pred")
 # Run on validation (dev) dataset
 if scenario == 6.1:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)

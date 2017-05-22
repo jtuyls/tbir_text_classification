@@ -1,6 +1,7 @@
 
 from main.data_loader import DataLoader
 from main.data_loader_pairwise import PairwiseDataLoader
+from main.data_loader_word_embeddings import DataLoaderWordEmbeddings
 from main.ffnn_network_multiple_input import NetworkMI
 from main.ffnn_ranking_network import FFNNRankingNetwork
 from main.ffnn_ranking_network_sigmoid import FFNNRankingNetworkSigmoid
@@ -9,8 +10,10 @@ from main.ffnn_network_pca import NetworkPCA
 from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
+from main.keras_ranking_conv_network import KerasRankingConv
 
-scenario = 4.0
+#scenario = 5.0
+scenario = 7.0
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -20,6 +23,10 @@ data_loader_pairwise = PairwiseDataLoader('data/SemEval2016-Task3-CQA-QL-train-p
                                           'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
                                           'data/SemEval2016-Task3-CQA-QL-dev-subtaskA.xml',
                                           'data/test_input.xml')
+data_loader_word_embeddings = DataLoaderWordEmbeddings('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
+                                                       'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
+                                                       'data/SemEval2016-Task3-CQA-QL-dev-subtaskA.xml',
+                                                       'data/test_input.xml')
 
 # 1. Run feedforward neural network with multiple input for classification
 # Run on test dataset
@@ -112,6 +119,12 @@ if scenario == 6.2:
     keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=20,
                            prediction_filename="scorer/scenario_6_2.pred")
 
+# 7. Run conv neural network with word embedding
+# Run on test dataset
+if scenario == 7.0:
+    keras_ranking_cnn = KerasRankingConv(data_loader_word_embeddings)
+    keras_ranking_cnn.main(batch_size=128, num_epochs=1,
+                           prediction_filename="scorer/scenario_7_0.pred")
 
 
 

@@ -78,7 +78,7 @@ class KerasRNNPCA(object):
         else:
             raise ValueError("No such optimizer")
 
-    def train_pca_preprocessor(data_train, n_components):
+    def train_pca_preprocessor(self, data_train, n_components):
 
         # Initialize and fit PCA
         pca = PCA(n_components=n_components)
@@ -89,7 +89,7 @@ class KerasRNNPCA(object):
 
         return pca
 
-    def transform_to_correct_format(data, q_idx, a_idx):
+    def transform_to_correct_format(self, data, q_idx, a_idx):
         print("Format transformation")
         X_q = []
         X_a = []
