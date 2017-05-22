@@ -218,7 +218,7 @@ class FFNNRankingNetwork(Network):
 
 
 
-    def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.20,
+    def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.1,
              optimizer_name="sgd", learning_rate=0.0001, loss="cross_entropy",
              prediction_filename="scorer/ffnn_ranking.pred",
              test=False, save_data_after_loading=True):
@@ -312,6 +312,7 @@ class FFNNRankingNetwork(Network):
             a_id = index['a_id']
             answers_idx_list = [test_idx.index(item) for item in test_idx if
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
+            print(answers_idx_list)
             rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind],true_array)])
             #print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
             conf_scores.append(1/(1+rank))

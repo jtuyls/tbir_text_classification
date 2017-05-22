@@ -84,7 +84,7 @@ class KerasRNNRanking(object):
             raise ValueError("No such optimizer")
 
     def train_network(self, preds, question, answer_1, answer_2, X_train_Q, X_train_A_1, X_train_A_2, y_train,
-                      batch_size, num_epochs, loss_name='categorical_crossentropy', optimizer_name="adam", learning_rate=0.0001, validation_split=0.2):
+                      batch_size, num_epochs, loss_name='categorical_crossentropy', optimizer_name="adam", learning_rate=0.0001, validation_split=0.1):
 
         optimizer = self.get_optimizer(optimizer_name=optimizer_name, lr=learning_rate)
 
@@ -101,7 +101,7 @@ class KerasRNNRanking(object):
         return model
 
     def main(self, embed_hidden_size, rnn_size, loss_name="categorical_crossentropy", optimizer_name="adam",
-             learning_rate=0.0001, dropout=0.3, batch_size=32, num_epochs=40, test=False,
+             learning_rate=0.0001, dropout=0.3, validation_split=0.1, batch_size=32, num_epochs=40, test=False,
              prediction_filename="scorer/keras_rnn.pred", save_data_after_loading=True):
         if test:
             X_train_Q, X_train_A_1, X_train_A_2, y_train, \
@@ -141,6 +141,7 @@ class KerasRNNRanking(object):
                                         loss_name=loss_name,
                                         optimizer_name=optimizer_name,
                                         learning_rate=learning_rate,
+                                        validation_split=validation_split,
                                         batch_size=batch_size,
                                         num_epochs=num_epochs)
 

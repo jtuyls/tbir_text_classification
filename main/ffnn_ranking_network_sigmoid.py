@@ -92,20 +92,24 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
 
         return output_layer
 
+    def get_loss(self, loss_name, y_, logits):
+        if loss_name == "cross_entropy":
+            return tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, logits=logits)
+        elif loss_name == "hinge":
+            return tf.losses.hinge_loss(labels=y_, logits= tf.nn.sigmoid(logits))
+        else:
+            raise ValueError("No such optimizer")
+
     def train_network(self, network_pred,
                       X_train_Q, X_train_A_1, X_train_A_2, y_train,
                       X_valid_Q, X_valid_A_1, X_valid_A_2, y_valid,
                       XQ_, XA1_, XA2_, y_, keep_prob_,
-                      optimizer_name="sgd", learning_rate=0.0001,
+                      loss="cross_entropy", optimizer_name="sgd", learning_rate=0.0001,
                       batch_size=32, dropout=0.1, num_epochs=100):
         #y_ = tf.to_int64(y_)
-        # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-        #   labels=y_, logits=network_pred, name='xentropy')
+        loss_function = self.get_loss(loss_name=loss, y_=y_, logits=network_pred)
 
-        cross_entropy = tf.nn.sigmoid_cross_entropy_with_logits(
-            labels=y_, logits=network_pred)
-
-        loss = tf.reduce_mean(cross_entropy)
+        loss = tf.reduce_mean(loss_function)
 
         #loss = tf.reduce_mean(cross_entropy, name='xentropy_mean')
 
@@ -184,8 +188,8 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
             return predictions, confidence_scores
 
 
-
-    def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.20,
+    def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.2,
+             optimizer_name="sgd", learning_rate=0.0001, loss="cross_entropy",
              prediction_filename="scorer/ffnn_ranking.pred",
              test=False, save_data_after_loading=True):
         if test:
@@ -200,7 +204,7 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
         print("Length test dataset: {}".format(X_test_Q.shape[0]))
 
         # reshape y_train
-        #y_train = np.reshape(y_train, (len(y_train), 1))
+        y_train = np.reshape(y_train, (len(y_train), 1))
         #y_test = np.reshape(y_test, (len(y_test), 1))
 
         # Shuffled split of training data in training set and validation set
@@ -247,6 +251,9 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
                                         XA2_=XA2_,
                                         y_=y_,
                                         keep_prob_=keep_prob_,
+                                        loss=loss,
+                                        optimizer_name=optimizer_name,
+                                        learning_rate=learning_rate,
                                         batch_size=batch_size,
                                         dropout=dropout,
                                         num_epochs=num_epochs)
