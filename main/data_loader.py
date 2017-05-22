@@ -118,7 +118,13 @@ class DataLoader(object):
     def get_data_for_pca(self):
         print("Loading data")
         question_sentences_tuples, answer_sentences_tuples, answer_labels_train = self._read_raw_xml_data_general(self.data_path_train_1)
+        question_sentences_tuples_2, answer_sentences_tuples_2, answer_labels_train_2 = self._read_raw_xml_data_general(
+            self.data_path_train_2)
         question_sentences_tuples_valid, answer_sentences_tuples_valid, answer_labels_valid = self._read_raw_xml_data_general(self.data_path_validation)
+
+        question_sentences_tuples = question_sentences_tuples + question_sentences_tuples_2
+        answer_sentences_tuples = answer_sentences_tuples + answer_sentences_tuples_2
+        answer_labels_train = answer_labels_train + answer_labels_train_2
 
         question_sentences = [q_tuple[1]['category'] + q_tuple[1]['subject'] + q_tuple[1]['question']
                               for q_tuple in question_sentences_tuples]
@@ -157,7 +163,7 @@ class DataLoader(object):
         print("Done loading data")
         return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid, test_idx
 
-    def get_data_for_pca_two_datasets(self):
+    def get_data_for_pca_test(self):
         print("Loading data")
         question_sentences_tuples, answer_sentences_tuples, answer_labels_train = self._read_raw_xml_data_general(
             self.data_path_train_1)
@@ -165,54 +171,12 @@ class DataLoader(object):
             self.data_path_train_2)
         question_sentences_tuples_valid, answer_sentences_tuples_valid, answer_labels_valid = self._read_raw_xml_data_general(
             self.data_path_validation)
-
-        question_sentences = [q_tuple[1]['category'] + q_tuple[1]['subject'] + q_tuple[1]['question']
-                              for q_tuple in question_sentences_tuples + question_sentences_tuples_2]
-        q_idx = [q_tuple[0] for q_tuple in question_sentences_tuples + question_sentences_tuples_2]
-        answer_sentences = [a_tuple[1]['answer'] for a_tuple in answer_sentences_tuples + answer_sentences_tuples_2]
-        a_idx = [a_tuple[0] for a_tuple in answer_sentences_tuples + answer_sentences_tuples_2]
-        question_sentences_valid = [q_tuple[1]['category'] + q_tuple[1]['subject'] + q_tuple[1]['question']
-                                    for q_tuple in question_sentences_tuples_valid]
-        q_idx_valid = [q_tuple[0] for q_tuple in question_sentences_tuples_valid]
-        answer_sentences_valid = [a_tuple[1]['answer'] for a_tuple in answer_sentences_tuples_valid]
-        a_idx_valid = [a_tuple[0] for a_tuple in answer_sentences_tuples_valid]
-
-        print(len(question_sentences), len(answer_sentences))
-        sentences_train = question_sentences + answer_sentences
-        sentences_valid = question_sentences_valid + answer_sentences_valid
-        sentences = sentences_train + sentences_valid
-        vocabulary, vocabulary_inv = self._build_vocab(sentences)
-        vocabulary_size = len(vocabulary_inv)
-
-        print(len(sentences), vocabulary_size)
-        data_train = np.zeros((len(sentences_train), vocabulary_size))
-        for i, sentence in enumerate(sentences_train):
-            for word in sentence:
-                data_train[i, vocabulary[word]] = 1
-
-        data_valid = np.zeros((len(sentences_valid), vocabulary_size))
-        for i, sentence in enumerate(sentences_valid):
-            for word in sentence:
-                data_valid[i, vocabulary[word]] = 1
-
-        y_train = np.array(answer_labels_train)
-        y_valid = np.array(answer_labels_valid)
-
-        _, _, test_idx = self._read_raw_xml_data(self.data_path_validation)
-        print("Done loading data")
-        return data_train, data_valid, q_idx, a_idx, q_idx_valid, a_idx_valid, y_train, y_valid, test_idx
-
-    def get_data_for_pca_test(self):
-        print("Loading data")
-        question_sentences_tuples, answer_sentences_tuples, answer_labels_train = self._read_raw_xml_data_general(
-            self.data_path_train_1)
-        question_sentences_tuples_valid, answer_sentences_tuples_valid, answer_labels_valid = self._read_raw_xml_data_general(
-            self.data_path_validation)
         question_sentences_tuples_test, answer_sentences_tuples_test, answer_labels_test = self._read_raw_xml_data_general(
             self.data_path_test)
 
-        question_sentences_tuples = question_sentences_tuples + question_sentences_tuples_valid
-        answer_sentences_tuples = answer_sentences_tuples + answer_sentences_tuples_valid
+        question_sentences_tuples = question_sentences_tuples + question_sentences_tuples_2 + question_sentences_tuples_valid
+        answer_sentences_tuples = answer_sentences_tuples + answer_sentences_tuples_2 + answer_sentences_tuples_valid
+        answer_labels_train = answer_labels_train + answer_labels_train_2 + answer_labels_valid
 
         question_sentences = [q_tuple[1]['category'] + q_tuple[1]['subject'] + q_tuple[1]['question']
                               for q_tuple in question_sentences_tuples]
@@ -244,7 +208,7 @@ class DataLoader(object):
                 data_test[i, vocabulary[word]] = 1
 
         y_train = np.array(answer_labels_train)
-        y_valid = np.array(answer_labels_valid)
+        y_valid = np.array(answer_labels_test)
 
         _, _, test_idx = self._read_raw_xml_data(self.data_path_test)
         print("Done loading data")
