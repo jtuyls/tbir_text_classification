@@ -125,13 +125,20 @@ class KerasRNNPCA(object):
              dropout=0.3, batch_size=32, num_epochs=40, test=False,
              prediction_filename="scorer/keras_rnn_pca.pred"):
 
-        data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, \
-            y_train, y_test, test_idx = self.data_loader.get_data_for_pca()
+        # data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, \
+        #     y_train, y_test, test_idx = self.data_loader.get_data_for_pca()
+
+        if test == False:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, \
+            self.y_train, self.y_test, test_idx = self.data_loader.get_data_for_pca()
+        else:
+            data_train, data_valid, q_idx_train, a_idx_train, q_idx_valid, a_idx_valid, \
+            self.y_train, self.y_test, test_idx = self.data_loader.get_data_for_pca_test()
 
         # Fit preprocessor
-        pca = train_pca_preprocessor(data_train, 20)
-        X_t = pca.transform(data_train)
-        X_v = pca.transform(data_valid)
+        self.pca = self.train_pca_preprocessor(data_train, 20)
+        X_t = self.pca.transform(data_train)
+        X_v = self.pca.transform(data_valid)
 
         # transform data to question and answer format of neural network
         X_train_Q, X_train_A = transform_to_correct_format(X_t, q_idx_train, a_idx_train)
@@ -177,7 +184,7 @@ class KerasRNNPCA(object):
         # loss, acc = model.evaluate([X_valid_Q, X_valid_A], y_valid,
         #                           batch_size=BATCH_SIZE)
         # print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
-        pred_valid = model.predict([X_test_Q, X_test_A], batch_size=batch_size)
+        pred_valid = self.model.predict([X_test_Q, X_test_A], batch_size=batch_size)
 
         confidence_scores = np.amax(pred_valid, axis=1)
         predictions = np.round(pred_valid)

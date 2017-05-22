@@ -59,7 +59,6 @@ if scenario == 6.3:
         keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=15,
                                prediction_filename="scorer/scenario_6_3.pred",
                                validation_split=0.1, save_data_after_loading=False)
-
 if scenario == 6.4:
             keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
             keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=10,

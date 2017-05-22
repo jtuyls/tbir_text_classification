@@ -90,7 +90,8 @@ class KerasRNNRanking(object):
 
         model = Model([question, answer_1, answer_2], preds)
         model.compile(optimizer=optimizer,
-                      loss=loss_name)
+                      loss=loss_name,
+                      metrics=['accuracy'])
 
         print('Training')
         model.fit([X_train_Q, X_train_A_1, X_train_A_2], y_train,
