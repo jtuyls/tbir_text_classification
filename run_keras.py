@@ -1,4 +1,3 @@
-
 #### FILE FOR RUNNING ON GPU MACHINE WITHOUT TENSORFLOW ####
 from main.data_loader import DataLoader
 from main.data_loader_pairwise import PairwiseDataLoader
@@ -7,7 +6,7 @@ from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 
-scenario = 6.1
+scenario = 6.4
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -47,11 +46,22 @@ if scenario == 6.0:
 # Run on validation (dev) dataset
 if scenario == 6.1:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=50,
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=20,
                            prediction_filename="scorer/scenario_6_1.pred",
-                           save_data_after_loading=False)
+                           validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.2:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
     keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=20,
                            prediction_filename="scorer/scenario_6_2.pred",
-                           save_data_after_loading=False)
+                           validation_split=0.1, save_data_after_loading=False)
+if scenario == 6.3:
+        keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
+        keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=15,
+                               prediction_filename="scorer/scenario_6_3.pred",
+                               validation_split=0.1, save_data_after_loading=False)
+
+if scenario == 6.4:
+            keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
+            keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=10,
+                                   prediction_filename="scorer/scenario_6_4.pred",
+                                   validation_split=0.1, save_data_after_loading=False)
