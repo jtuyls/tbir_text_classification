@@ -149,8 +149,9 @@ class FFNNRankingNetwork(Network):
         # Launch the graph
         with tf.Session() as sess:
             sess.run(init)
-
+            print(y_train[:50])
             y_train = sess.run(tf.one_hot(y_train, 2))
+            print(y_train[:50])
             y_valid = sess.run(tf.one_hot(y_valid, 2))
 
             print("Start training")
@@ -169,6 +170,7 @@ class FFNNRankingNetwork(Network):
                 pred_train = sess.run(network_pred, feed_dict={XQ_: X_train_Q, XA1_: X_train_A_1, XA2_: X_train_A_2, y_: y_train, keep_prob_: 1.})
                 #predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), sess.run(tf.one_hot(y_train, 2))
                 predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_train))), y_train
+                predictions[:50], targets[:]
                 train_acc = np.mean(predictions == targets)
                 train_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
 
@@ -219,6 +221,7 @@ class FFNNRankingNetwork(Network):
 
 
     def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.1,
+             input_units=50,
              optimizer_name="sgd", learning_rate=0.0001, loss="cross_entropy",
              prediction_filename="scorer/ffnn_ranking.pred",
              test=False, save_data_after_loading=True):
@@ -265,7 +268,9 @@ class FFNNRankingNetwork(Network):
         y_ = tf.placeholder(tf.int32, shape=(None, 2))
         keep_prob_ = tf.placeholder(tf.float32)
 
-        network_pred = self.build_network(input_size_Q=input_size_Q, input_size_A=input_size_A, XQ_=XQ_, XA1_=XA1_, XA2_=XA2_, keep_prob_=keep_prob_)
+        network_pred = self.build_network(input_size_Q=input_size_Q, input_size_A=input_size_A,
+                                          XQ_=XQ_, XA1_=XA1_, XA2_=XA2_, keep_prob_=keep_prob_,
+                                          input_units=input_units)
 
         self.model = self.train_network(network_pred=network_pred,
                                         X_train_Q=self.X_train_Q,
@@ -312,7 +317,7 @@ class FFNNRankingNetwork(Network):
             a_id = index['a_id']
             answers_idx_list = [test_idx.index(item) for item in test_idx if
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
-            print(answers_idx_list)
+            #print(answers_idx_list)
             rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind],true_array)])
             #print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
             conf_scores.append(1/(1+rank))

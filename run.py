@@ -10,7 +10,7 @@ from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 
-scenario = 3.2
+scenario = 3.1
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -47,17 +47,22 @@ if scenario == 3.0:
 # Run network with softmax output on validation (dev) dataset
 if scenario == 3.1:
     network = FFNNRankingNetwork(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=1, dropout=0.1, loss="cross_entropy", prediction_filename="scorer/scenario_3_1.pred")
+    network.main(batch_size=32, num_epochs=50, dropout=0.2, loss="cross_entropy",
+                 input_units=50,
+                 learning_rate=0.0001, validation_split=0.2,
+                 prediction_filename="scorer/scenario_3_1.pred")
 # Run network with sigmoid output on validation (dev) dataset
 if scenario == 3.2:
     network = FFNNRankingNetworkSigmoid(data_loader_pairwise=data_loader_pairwise)
     network.main(batch_size=32, num_epochs=50, dropout=0.1,
                  loss="cross_entropy", optimizer_name="sgd", learning_rate=0.0001,
+                 validation_split=0.2,
                  prediction_filename="scorer/scenario_3_2.pred")
 if scenario == 3.3:
     network = FFNNRankingNetworkSigmoid(data_loader_pairwise=data_loader_pairwise)
     network.main(batch_size=32, num_epochs=50, dropout=0.1,
                  loss="hinge", optimizer_name="sgd", learning_rate=0.001,
+                 validation_split=0.2,
                  prediction_filename="scorer/scenario_3_3.pred")
 
 
