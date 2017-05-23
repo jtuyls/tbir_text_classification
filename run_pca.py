@@ -1,7 +1,7 @@
 
 
-from pca_analysis import PCA_analysis
-from data_loader import DataLoader
+from main.pca_analysis import PCA_analysis
+from main.data_loader import DataLoader
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-dev-subtaskA.xml',

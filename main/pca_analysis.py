@@ -6,7 +6,7 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 
-from output_file_writer import write_predictions_to_file_unsupervised
+from main.output_file_writer import write_predictions_to_file_unsupervised
 
 
 class PCA_analysis(object):
