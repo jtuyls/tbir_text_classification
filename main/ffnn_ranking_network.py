@@ -118,6 +118,8 @@ class FFNNRankingNetwork(Network):
     def get_loss(self, loss_name, y_, logits):
         if loss_name == "cross_entropy":
             return tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=logits)
+        elif loss_name == "sigmoid_cross_entropy":
+            return tf.nn.sigmoid_cross_entropy_with_logits(labels=y_, logits=logits)
         elif loss_name == "hinge":
             return tf.losses.hinge_loss(labels=y_, logits=logits)
         else:
@@ -169,7 +171,10 @@ class FFNNRankingNetwork(Network):
 
                 pred_train = sess.run(network_pred, feed_dict={XQ_: X_train_Q, XA1_: X_train_A_1, XA2_: X_train_A_2, y_: y_train, keep_prob_: 1.})
                 #predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), sess.run(tf.one_hot(y_train, 2))
-                predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_train))), y_train
+                if loss == "sigmoid_cross_entropy":
+                    predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_train))), y_train
+                else:
+                    predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), y_train
                 predictions[:50], targets[:]
                 train_acc = np.mean(predictions == targets)
                 train_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
@@ -184,7 +189,10 @@ class FFNNRankingNetwork(Network):
 
                 pred_valid = sess.run(network_pred, feed_dict={XQ_: X_valid_Q, XA1_: X_valid_A_1, XA1_: X_valid_A_2, y_: y_valid, keep_prob_: 1.})
                 #predictions, targets = np.round(sess.run(tf.nn.softmax(pred_valid))), sess.run(tf.one_hot(y_valid, 2))
-                predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_valid))), y_valid
+                if loss == "sigmoid_cross_entropy":
+                    predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_valid))), y_valid
+                else:
+                    predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), y_train
                 val_acc = np.mean(predictions == targets)
                 val_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
 
@@ -201,7 +209,7 @@ class FFNNRankingNetwork(Network):
             return network_pred
 
 
-    def make_predictions(self, XQ_, XA1_, XA2_, keep_prob_,
+    def make_predictions(self, loss, XQ_, XA1_, XA2_, keep_prob_,
                          X_test_Q, X_test_A_1, X_test_A_2):
         if self.model == None:
             raise ValueError("Model is not yet trained")
@@ -213,8 +221,12 @@ class FFNNRankingNetwork(Network):
             sess.run(init)
 
             pred_test = sess.run(self.model, feed_dict={XQ_: X_test_Q, XA1_: X_test_A_1, XA2_: X_test_A_2, keep_prob_: 1.})
-            confidence_scores = np.amax(sess.run(tf.nn.softmax(pred_test)), axis=1)
-            predictions = np.round(sess.run(tf.nn.softmax(pred_test)))
+            if loss == "sigmoid_cross_entropy":
+                confidence_scores = np.amax(sess.run(tf.nn.sigmoid(pred_test)), axis=1)
+                predictions = np.round(sess.run(tf.nn.sigmoid(pred_test)))
+            else:
+                confidence_scores = np.amax(sess.run(tf.nn.softmax(pred_test)), axis=1)
+                predictions = np.round(sess.run(tf.nn.softmax(pred_test)))
 
             return predictions, confidence_scores
 
@@ -275,7 +287,10 @@ class FFNNRankingNetwork(Network):
         XQ_ = tf.placeholder(tf.float32, shape=(None, input_size_Q))
         XA1_ = tf.placeholder(tf.float32, shape=(None, input_size_A))
         XA2_ = tf.placeholder(tf.float32, shape=(None, input_size_A))
-        y_ = tf.placeholder(tf.int32, shape=(None, label_size))
+        if loss == "sigmoid_cross_entropy":
+            y_ = tf.placeholder(tf.float32, shape=(None, label_size))
+        else:
+            y_ = tf.placeholder(tf.int32, shape=(None, label_size))
         keep_prob_ = tf.placeholder(tf.float32)
 
         network_pred = self.build_network(label_size=y_train.shape[1], input_size_Q=input_size_Q, input_size_A=input_size_A,
@@ -303,7 +318,8 @@ class FFNNRankingNetwork(Network):
                                         dropout=dropout,
                                         num_epochs=num_epochs)
 
-        predictions, conf_scores = self.make_predictions(XQ_=XQ_,
+        predictions, conf_scores = self.make_predictions(loss=loss,
+                                                         XQ_=XQ_,
                                                          XA1_=XA1_,
                                                          XA2_=XA2_,
                                                          keep_prob_=keep_prob_,
