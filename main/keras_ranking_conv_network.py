@@ -22,10 +22,6 @@ from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras.utils.np_utils import to_categorical
 
-from main.data_loader import DataLoader
-
-from main.output_file_writer import write_predictions_to_file
-
 GLOVE_DIR = 'word_embeddings/glove.6B/'
 MAX_SEQUENCE_LENGTH = 250
 MAX_NB_WORDS = 20000
