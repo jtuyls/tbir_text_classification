@@ -60,8 +60,8 @@ if scenario == 3.0:
 # Run network with softmax output on validation (dev) dataset
 if scenario == 3.1:
     network = FFNNRankingNetwork(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=20, dropout=0.1, loss="cross_entropy",
-                 input_units=50,
+    network.main(batch_size=32, num_epochs=50, dropout=0.1, loss="sigmoid_cross_entropy",
+                 input_units=200,
                  learning_rate=0.0001, validation_split=0.1,
                  prediction_filename="scorer/scenario_3_1.pred")
 # Run network with sigmoid output on validation (dev) dataset
