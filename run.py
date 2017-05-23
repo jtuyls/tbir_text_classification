@@ -11,7 +11,7 @@ from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 from main.keras_ranking_conv_network import KerasRankingConv
 
-scenario = 3.1
+scenario = 7.0
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
