@@ -59,7 +59,7 @@ if scenario == 3.0:
 # Run network with softmax output on validation (dev) dataset
 if scenario == 3.1:
     network = FFNNRankingNetwork(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=20, dropout=0.1, loss="cross_entropy",
+    network.main(batch_size=32, num_epochs=20, dropout=0.1, loss="hinge",
                  input_units=400, hidden_units=1000,
                  learning_rate=0.0001, validation_split=0.1,
                  prediction_filename="scorer/scenario_3_1.pred")
@@ -113,8 +113,8 @@ if scenario == 7.0:
                            prediction_filename="scorer/scenario_7_0.pred", test=True)
 if scenario == 7.1:
     keras_ranking_cnn = KerasRankingConv(data_loader_word_embeddings)
-    keras_ranking_cnn.main(batch_size=1024, num_epochs=1,
-                           dropout=0.1, learning_rate=0.01,
+    keras_ranking_cnn.main(batch_size=128, num_epochs=10,
+                           dropout=0.1, learning_rate=0.0001,
                            prediction_filename="scorer/scenario_7_1.pred")
 
 
