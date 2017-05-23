@@ -6,7 +6,7 @@ from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 
-scenario = 6.1
+scenario = 6.02
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -41,13 +41,18 @@ if scenario == 5.0:
 # Run on test dataset
 if scenario == 6.0:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=20, test=True,
-                            prediction_filename="scorer/scenario_6_0.pred",
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=128, num_epochs=20, test=True,
+                           prediction_filename="scorer/scenario_6_0.pred",
                            save_data_after_loading=False)
 if scenario == 6.01:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=40, test=True,
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=128, num_epochs=20, test=True,
                            prediction_filename="scorer/scenario_6_0_0.pred",
+                           save_data_after_loading=False)
+if scenario == 6.02:
+    keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=128, num_epochs=10, test=True,
+                           prediction_filename="scorer/scenario_6_0_2.pred",
                            save_data_after_loading=False)
 # Run on validation (dev) dataset
 if scenario == 6.1:
@@ -61,13 +66,13 @@ if scenario == 6.2:
                            prediction_filename="scorer/scenario_6_2.pred",
                            validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.3:
-        keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-        keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=15,
-                               prediction_filename="scorer/scenario_6_3.pred",
-                               validation_split=0.1, save_data_after_loading=False)
+    keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=15,
+                           prediction_filename="scorer/scenario_6_3.pred",
+                           validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.4:
             keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-            keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=32, num_epochs=10,
+            keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=256, num_epochs=20,
                                    prediction_filename="scorer/scenario_6_4.pred",
                                    validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.5:
@@ -77,7 +82,7 @@ if scenario == 6.5:
                            validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.6:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=64, num_epochs=40,
+    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=50, batch_size=128, num_epochs=20,
                            prediction_filename="scorer/scenario_6_6.pred",
                            validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.7:
