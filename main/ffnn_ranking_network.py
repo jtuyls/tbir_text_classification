@@ -19,7 +19,7 @@ class FFNNRankingNetwork(Network):
         self.data_loader = data_loader_pairwise
         self.model = None
 
-    def build_network(self, label_size, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50):
+    def build_network(self, label_size, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50, hidden_units=600):
 
         # setup input layers
 
@@ -134,6 +134,7 @@ class FFNNRankingNetwork(Network):
         #y_ = tf.to_int64(y_)
         # cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
         #   labels=y_, logits=network_pred, name='xentropy')
+        print("Loss: {}".format(loss))
 
         loss_function = self.get_loss(loss, y_, network_pred)
 
@@ -164,6 +165,7 @@ class FFNNRankingNetwork(Network):
                 train_batches = 0
                 for batch in self.iterate_minibatches(X_train_Q, X_train_A_1, X_train_A_2, y_train, batch_size, shuffle=True):
                     _, c, pred = sess.run([optimizer, loss, network_pred], feed_dict={XQ_: batch[0], XA1_: batch[1], XA2_: batch[2], y_: batch[3], keep_prob_: 1-dropout})
+
                     #print(sess.run(tf.nn.softmax(pred)))
                     #print(sess.run(tf.one_hot(batch[1], 2)))
                     train_err += c
@@ -172,10 +174,10 @@ class FFNNRankingNetwork(Network):
                 pred_train = sess.run(network_pred, feed_dict={XQ_: X_train_Q, XA1_: X_train_A_1, XA2_: X_train_A_2, y_: y_train, keep_prob_: 1.})
                 #predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), sess.run(tf.one_hot(y_train, 2))
                 if loss == "sigmoid_cross_entropy":
-                    predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_train))), y_train
+                    predictions, targets = np.argmax(sess.run(tf.nn.sigmoid(pred_train)), axis=1), np.argmax(y_train, axis=1)
                 else:
-                    predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), y_train
-                predictions[:50], targets[:]
+                    predictions, targets = np.argmax(sess.run(tf.nn.softmax(pred_train)), axis=1), np.argmax(y_train, axis=1)
+                #predictions[:50], targets[:]
                 train_acc = np.mean(predictions == targets)
                 train_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
 
@@ -190,9 +192,9 @@ class FFNNRankingNetwork(Network):
                 pred_valid = sess.run(network_pred, feed_dict={XQ_: X_valid_Q, XA1_: X_valid_A_1, XA1_: X_valid_A_2, y_: y_valid, keep_prob_: 1.})
                 #predictions, targets = np.round(sess.run(tf.nn.softmax(pred_valid))), sess.run(tf.one_hot(y_valid, 2))
                 if loss == "sigmoid_cross_entropy":
-                    predictions, targets = np.round(sess.run(tf.nn.sigmoid(pred_valid))), y_valid
+                    predictions, targets = np.argmax(sess.run(tf.nn.sigmoid(pred_valid)), axis=1), np.argmax(y_valid, axis=1)
                 else:
-                    predictions, targets = np.round(sess.run(tf.nn.softmax(pred_train))), y_train
+                    predictions, targets = np.argmax(sess.run(tf.nn.softmax(pred_valid)), axis=1), np.argmax(y_valid, axis=1)
                 val_acc = np.mean(predictions == targets)
                 val_f1 = sklearn.metrics.f1_score(targets, predictions, average='macro')
 
@@ -223,17 +225,17 @@ class FFNNRankingNetwork(Network):
             pred_test = sess.run(self.model, feed_dict={XQ_: X_test_Q, XA1_: X_test_A_1, XA2_: X_test_A_2, keep_prob_: 1.})
             if loss == "sigmoid_cross_entropy":
                 confidence_scores = np.amax(sess.run(tf.nn.sigmoid(pred_test)), axis=1)
-                predictions = np.round(sess.run(tf.nn.sigmoid(pred_test)))
+                predictions = np.argmax(sess.run(tf.nn.sigmoid(pred_test)), axis=1)
             else:
                 confidence_scores = np.amax(sess.run(tf.nn.softmax(pred_test)), axis=1)
-                predictions = np.round(sess.run(tf.nn.softmax(pred_test)))
+                predictions = np.argmax(sess.run(tf.nn.softmax(pred_test)), axis=1)
 
             return predictions, confidence_scores
 
 
 
     def main(self, batch_size, num_epochs, dropout=0.1, validation_split=0.1,
-             input_units=50,
+             input_units=50, hidden_units=600,
              optimizer_name="sgd", learning_rate=0.0001, loss="cross_entropy",
              prediction_filename="scorer/ffnn_ranking.pred",
              test=False, save_data_after_loading=True):
@@ -290,12 +292,13 @@ class FFNNRankingNetwork(Network):
         if loss == "sigmoid_cross_entropy":
             y_ = tf.placeholder(tf.float32, shape=(None, label_size))
         else:
-            y_ = tf.placeholder(tf.int32, shape=(None, label_size))
+            y_ = tf.placeholder(tf.int32, shape=(None))
         keep_prob_ = tf.placeholder(tf.float32)
 
         network_pred = self.build_network(label_size=y_train.shape[1], input_size_Q=input_size_Q, input_size_A=input_size_A,
                                           XQ_=XQ_, XA1_=XA1_, XA2_=XA2_, keep_prob_=keep_prob_,
-                                          input_units=input_units)
+                                          input_units=input_units,
+                                          hidden_units=hidden_units)
 
         self.model = self.train_network(network_pred=network_pred,
                                         X_train_Q=self.X_train_Q,
@@ -333,20 +336,24 @@ class FFNNRankingNetwork(Network):
 
     def rank_data(self, predictions, test_idx, test_idx_org):
         # rank the each (question answer_1) pair according to the number of times it beats the a (question answer_2) pair
-        # Rank 9 means that answer 1 is better than all other answers
+        # Rank 18 means that answer 1 is better than all other answers
         # Rank 0 means that answer 1 is worse than all other answers
-        true_array = np.array([0., 1.])
+        print("Rank data")
+        better = 2
+        even = 1
         conf_scores = []
         for i, index in enumerate(test_idx_org):
             q_id = index['q_id']
             a_id = index['a_id']
             answers_idx_list = [test_idx.index(item) for item in test_idx if
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
-            #print(answers_idx_list)
-            rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind],true_array)])
-            #print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
-            conf_scores.append(rank/9.)
+            better_rank = len([predictions[ind] for ind in answers_idx_list if predictions[ind] == better])
+            even_rank = len([predictions[ind] for ind in answers_idx_list if predictions[ind] == even])
+            # print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
+            rank = better_rank * 2 + even_rank
+            conf_scores.append(rank / 18.0)
 
+        print("Done ranking data")
         return conf_scores
 
     def write_predictions_to_file(self, conf_scores, validation_ids, filename):

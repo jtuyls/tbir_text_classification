@@ -4,7 +4,6 @@ from main.data_loader_pairwise import PairwiseDataLoader
 from main.data_loader_word_embeddings import DataLoaderWordEmbeddings
 from main.ffnn_network_multiple_input import NetworkMI
 from main.ffnn_ranking_network import FFNNRankingNetwork
-from main.ffnn_ranking_network_sigmoid import FFNNRankingNetworkSigmoid
 from main.ffnn_network_pca import NetworkPCA
 
 from main.keras_rnn import KerasRNN
@@ -60,23 +59,10 @@ if scenario == 3.0:
 # Run network with softmax output on validation (dev) dataset
 if scenario == 3.1:
     network = FFNNRankingNetwork(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=50, dropout=0.1, loss="sigmoid_cross_entropy",
-                 input_units=200,
+    network.main(batch_size=32, num_epochs=20, dropout=0.1, loss="cross_entropy",
+                 input_units=400, hidden_units=1000,
                  learning_rate=0.0001, validation_split=0.1,
                  prediction_filename="scorer/scenario_3_1.pred")
-# Run network with sigmoid output on validation (dev) dataset
-if scenario == 3.2:
-    network = FFNNRankingNetworkSigmoid(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=50, dropout=0.1,
-                 loss="cross_entropy", optimizer_name="sgd", learning_rate=0.0001,
-                 validation_split=0.2,
-                 prediction_filename="scorer/scenario_3_2.pred")
-if scenario == 3.3:
-    network = FFNNRankingNetworkSigmoid(data_loader_pairwise=data_loader_pairwise)
-    network.main(batch_size=32, num_epochs=50, dropout=0.1,
-                 loss="hinge", optimizer_name="sgd", learning_rate=0.001,
-                 validation_split=0.2,
-                 prediction_filename="scorer/scenario_3_3.pred")
 
 
 # 4. Run keras recursive neural network for classification

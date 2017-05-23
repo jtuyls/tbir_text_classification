@@ -156,7 +156,7 @@ class KerasRNNRanking(object):
         pred_valid = self.model.predict([X_test_Q, X_test_A_1, X_test_A_2], batch_size=batch_size)
 
         confidence_scores = np.amax(pred_valid, axis=1)
-        predictions = np.round(pred_valid)
+        predictions = np.argmax(pred_valid, axis=1)
 
         print(pred_valid)
         print(confidence_scores)
@@ -171,8 +171,8 @@ class KerasRNNRanking(object):
         # Rank 18 means that answer 1 is better than all other answers
         # Rank 0 means that answer 1 is worse than all other answers
         print("Rank data")
-        better = np.array([0., 0., 1.])
-        even = np.array([0., 1., 0.])
+        better = 2
+        even = 1
         conf_scores = []
         for i, index in enumerate(test_idx_org):
             q_id = index['q_id']
@@ -180,8 +180,8 @@ class KerasRNNRanking(object):
             answers_idx_list = [test_idx.index(item) for item in test_idx if
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
             better_rank = len(
-                [predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind], better)])
-            even_rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind], even)])
+                [predictions[ind] for ind in answers_idx_list if predictions[ind] == better])
+            even_rank = len([predictions[ind] for ind in answers_idx_list if predictions[ind] == even])
             # print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
             rank = better_rank * 2 + even_rank
             conf_scores.append(rank / 18.0)
