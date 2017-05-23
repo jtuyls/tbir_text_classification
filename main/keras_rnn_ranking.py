@@ -38,7 +38,7 @@ class KerasRNNRanking(object):
     def __init__(self, data_loader_pairwise):
         self.data_loader = data_loader_pairwise
 
-    def build_network(self, input_shape_Q, input_shape_A, vocab_size,
+    def build_network(self, label_size, input_shape_Q, input_shape_A, vocab_size,
                       embed_hidden_size=50, rnn_size=100, dropout=0.3):
         print('Build model...')
         print('input_shape_Q: {}'.format(input_shape_Q))
@@ -118,13 +118,15 @@ class KerasRNNRanking(object):
         #print(train_idx[:100])
         #print(y_train[:100])
         y_train = to_categorical(y_train)
+        label_size = y_train.shape[1]
         #print(y_train)
         print('vocabulary size: {}'.format(vocab_size))
 
         input_shape_Q = X_train_Q.shape[1]
         input_shape_A = X_train_A_1.shape[1]
 
-        preds, question, answer_1, answer_2 = self.build_network(input_shape_Q=input_shape_Q,
+        preds, question, answer_1, answer_2 = self.build_network(label_size=label_size,
+                                                                 input_shape_Q=input_shape_Q,
                                                                  input_shape_A=input_shape_A,
                                                                  vocab_size=vocab_size,
                                                                  embed_hidden_size=embed_hidden_size,
@@ -165,19 +167,23 @@ class KerasRNNRanking(object):
 
     def rank_data(self, predictions, test_idx, test_idx_org):
         # rank the each (question answer_1) pair according to the number of times it beats the a (question answer_2) pair
-        # Rank 9 means that answer 1 is better than all other answers
+        # Rank 18 means that answer 1 is better than all other answers
         # Rank 0 means that answer 1 is worse than all other answers
         print("Rank data")
-        true_array = np.array([0., 1.])
+        better = np.array([0., 0., 1.])
+        even = np.array([0., 1., 0.])
         conf_scores = []
         for i, index in enumerate(test_idx_org):
             q_id = index['q_id']
             a_id = index['a_id']
             answers_idx_list = [test_idx.index(item) for item in test_idx if
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
-            rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind], true_array)])
+            better_rank = len(
+                [predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind], better)])
+            even_rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind], even)])
             # print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
-            conf_scores.append(rank/9.)
+            rank = better_rank * 2 + even_rank
+            conf_scores.append(rank / 18.0)
 
         print("Done ranking data")
         return conf_scores
