@@ -5,8 +5,9 @@ from main.data_loader_word_embeddings import DataLoaderWordEmbeddings
 from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
+from main.keras_ranking_conv_network import KerasRankingConv
 
-scenario = 6.1
+scenario = 7.1
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -96,9 +97,11 @@ if scenario == 7.0:
     keras_ranking_cnn = KerasRankingConv(data_loader_word_embeddings)
     keras_ranking_cnn.main(batch_size=128, num_epochs=10,
                            dropout=0.1, learning_rate=0.0001,
-                           prediction_filename="scorer/scenario_7_0.pred", test=True)
+                           prediction_filename="scorer/scenario_7_0.pred", test=True,
+                           save_data_after_loading=False)
 if scenario == 7.1:
     keras_ranking_cnn = KerasRankingConv(data_loader_word_embeddings)
     keras_ranking_cnn.main(batch_size=128, num_epochs=10,
                            dropout=0.1, learning_rate=0.0001,
-                           prediction_filename="scorer/scenario_7_1.pred")
+                           prediction_filename="scorer/scenario_7_1.pred",
+                           save_data_after_loading=False)
