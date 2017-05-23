@@ -16,6 +16,9 @@ Install requirements
 pip install -r requirements.txt
 ```
 
+Download glove from https://nlp.stanford.edu/projects/glove/ and put the file glove.6B.100d.txt in a new folder 'word_embeddings'.
+
+
 # Run
 
 Set scenario in run.py or run_pca.py
