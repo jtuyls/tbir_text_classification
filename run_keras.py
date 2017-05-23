@@ -6,7 +6,7 @@ from main.keras_rnn import KerasRNN
 from main.keras_rnn_ranking import KerasRNNRanking
 from main.keras_rnn_pca import KerasRNNPCA
 
-scenario = 4.0
+scenario = 6.1
 
 data_loader = DataLoader('data/SemEval2016-Task3-CQA-QL-train-part1-subtaskA.xml',
                          'data/SemEval2016-Task3-CQA-QL-train-part2-subtaskA.xml',
@@ -26,7 +26,7 @@ if scenario == 4.0:
 # Run on validation (dev) dataset
 if scenario == 4.1:
     keras_rnn = KerasRNN(data_loader=data_loader)
-    keras_rnn.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=1,
+    keras_rnn.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=40,
                    prediction_filename="scorer/scenario_4_1.pred")
 
 
@@ -52,7 +52,7 @@ if scenario == 6.01:
 # Run on validation (dev) dataset
 if scenario == 6.1:
     keras_rnn_ranking = KerasRNNRanking(data_loader_pairwise=data_loader_pairwise)
-    keras_rnn_ranking.main(embed_hidden_size=50, rnn_size=100, batch_size=32, num_epochs=1,
+    keras_rnn_ranking.main(embed_hidden_size=20, rnn_size=50, batch_size=128, num_epochs=20,
                            prediction_filename="scorer/scenario_6_1.pred",
                            validation_split=0.1, save_data_after_loading=False)
 if scenario == 6.2:
