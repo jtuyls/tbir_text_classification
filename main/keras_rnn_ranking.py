@@ -69,7 +69,7 @@ class KerasRNNRanking(object):
         print(merged)
         merged = layers.Dropout(dropout)(merged)
         print(merged)
-        preds = layers.Dense(2, activation='softmax')(merged)
+        preds = layers.Dense(label_size, activation='softmax')(merged)
 
         return preds, question, answer_1, answer_2
 
