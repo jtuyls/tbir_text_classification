@@ -1,6 +1,6 @@
 
 
-
+import os
 import math
 import time
 import sklearn.metrics
@@ -19,7 +19,7 @@ class FFNNRankingNetwork(Network):
         self.data_loader = data_loader_pairwise
         self.model = None
 
-    def build_network(self, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50):
+    def build_network(self, label_size, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50):
 
         # setup input layers
 
@@ -79,7 +79,7 @@ class FFNNRankingNetwork(Network):
         #     hidden3_dropout = tf.nn.dropout(hidden3, keep_prob)
 
         with tf.name_scope("output_layer"):
-            output_units = 2
+            output_units = label_size
             W = tf.Variable(tf.truncated_normal(shape=[hidden2_units, output_units],
                                                 stddev=1.0 / math.sqrt(float(input_size_Q) + float(input_size_A))),
                             name="weights")
@@ -149,10 +149,10 @@ class FFNNRankingNetwork(Network):
         # Launch the graph
         with tf.Session() as sess:
             sess.run(init)
-            print(y_train[:50])
-            y_train = sess.run(tf.one_hot(y_train, 2))
-            print(y_train[:50])
-            y_valid = sess.run(tf.one_hot(y_valid, 2))
+            #print(y_train[:50])
+            #y_train = sess.run(tf.one_hot(y_train, 2))
+            #print(y_train[:50])
+            #y_valid = sess.run(tf.one_hot(y_valid, 2))
 
             print("Start training")
             for epoch in range(num_epochs):
@@ -237,6 +237,16 @@ class FFNNRankingNetwork(Network):
         print("Length test dataset: {}".format(X_test_Q.shape[0]))
 
         # reshape y_train
+        init = tf.global_variables_initializer()
+
+        # Launch the graph
+        with tf.Session() as sess:
+            sess.run(init)
+            print(y_train[:50])
+            y_train = sess.run(tf.one_hot(y_train, 3))
+            print(y_train[:50])
+
+        label_size = y_train.shape[1]
         #y_train = np.reshape(y_train, (len(y_train), 1))
         #y_test = np.reshape(y_test, (len(y_test), 1))
 
@@ -265,10 +275,10 @@ class FFNNRankingNetwork(Network):
         XQ_ = tf.placeholder(tf.float32, shape=(None, input_size_Q))
         XA1_ = tf.placeholder(tf.float32, shape=(None, input_size_A))
         XA2_ = tf.placeholder(tf.float32, shape=(None, input_size_A))
-        y_ = tf.placeholder(tf.int32, shape=(None, 2))
+        y_ = tf.placeholder(tf.int32, shape=(None, label_size))
         keep_prob_ = tf.placeholder(tf.float32)
 
-        network_pred = self.build_network(input_size_Q=input_size_Q, input_size_A=input_size_A,
+        network_pred = self.build_network(label_size=y_train.shape[1], input_size_Q=input_size_Q, input_size_A=input_size_A,
                                           XQ_=XQ_, XA1_=XA1_, XA2_=XA2_, keep_prob_=keep_prob_,
                                           input_units=input_units)
 
@@ -303,8 +313,7 @@ class FFNNRankingNetwork(Network):
 
         # Calculate the confidence scores using the rank
         conf_scores = self.rank_data(predictions, test_idx, test_idx_org)
-        predictions_for_writing = np.array([[0., 1.] for _ in range(len(conf_scores))])
-        self.write_predictions_to_file(predictions_for_writing, conf_scores, test_idx_org, prediction_filename)
+        self.write_predictions_to_file(conf_scores, test_idx_org, prediction_filename)
 
     def rank_data(self, predictions, test_idx, test_idx_org):
         # rank the each (question answer_1) pair according to the number of times it beats the a (question answer_2) pair
@@ -320,9 +329,27 @@ class FFNNRankingNetwork(Network):
             #print(answers_idx_list)
             rank = len([predictions[ind] for ind in answers_idx_list if np.array_equal(predictions[ind],true_array)])
             #print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
-            conf_scores.append(1/(1+rank))
+            conf_scores.append(rank/9.)
 
         return conf_scores
+
+    def write_predictions_to_file(self, conf_scores, validation_ids, filename):
+
+        def write_line(filename, line):
+            f = open(filename, 'a')
+            f.write(line)
+            f.close()
+
+        def clean_file(filename):
+            f = open(filename, 'w')
+            f.close()
+
+        if os.path.exists(filename):
+            clean_file(filename)
+        line = "{} \t {} \t 0 \t {} \t {} \n"
+        for i, elem in enumerate(validation_ids):
+            write_line(filename, line.format(elem['q_id'], elem['a_id'], conf_scores[i], "true"))
+
 
 
 

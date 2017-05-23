@@ -2,41 +2,53 @@
 import os.path
 import re
 import itertools
+import json
 
 import numpy as np
 import xml.etree.ElementTree as ET
 
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+
 from main.data_loader import DataLoader
 
-class PairwiseDataLoader(DataLoader):
+GLOVE_DIR = 'word_embeddings/glove.6B/'
+MAX_SEQUENCE_LENGTH = 250
+MAX_NB_WORDS = 20000
+EMBEDDING_DIM = 100
+VALIDATION_SPLIT = 0.2
+
+class DataLoaderWordEmbeddings(DataLoader):
 
     def __init__(self, data_path_train_1, data_path_train_2, data_path_validation, data_path_test=None):
-        super(PairwiseDataLoader, self).__init__(data_path_train_1, data_path_train_2, data_path_validation, data_path_test)
+        super(DataLoaderWordEmbeddings, self).__init__(data_path_train_1, data_path_train_2, data_path_validation, data_path_test)
 
     def get_data_separate_sentences(self, save=True):
         print("Load data pairwise")
 
         # Try loading from disk
-        if os.path.isfile('data/train_data.npz') and os.path.isfile('data/test_data.npz')\
-                and os.path.isfile('data/info_data.npz'):
+        if os.path.isfile('data/word_train_data.npz') and os.path.isfile('data/word_test_data.npz')\
+                and os.path.isfile('data/word_info_data.npz') and os.path.isfile('data/word_index.json'):
             print("Load data from cached files")
-            file_train = np.load('data/train_data.npz')
+            file_train = np.load('data/word_train_data.npz')
             X_train_Q = file_train['X_train_Q']
             X_train_A_1 = file_train['X_train_A_1']
             X_train_A_2 = file_train['X_train_A_2']
             y_train = file_train['y_train']
 
-            file_test = np.load('data/test_data.npz')
+            file_test = np.load('data/word_test_data.npz')
             X_test_Q = file_test['X_test_Q']
             X_test_A_1 = file_test['X_test_A_1']
             X_test_A_2 = file_test['X_test_A_2']
             y_test = file_test['y_test']
 
-            file_info = np.load('data/info_data.npz')
+            file_info = np.load('data/word_info_data.npz')
             idx_train = list(file_info['idx_train'])
             idx_test = list(file_info['idx_test'])
             idx_test_original = list(file_info['idx_test_original'])
-            vocabulary_size = int(file_info['vocabulary_size'])
+            with open('data/word_index.json', 'r') as fp:
+                line = fp.readline()
+                word_index = json.loads(line)
         else:
             print("Compute data and save to files")
             Q_sentences_train, A_sentences_train, \
@@ -46,51 +58,67 @@ class PairwiseDataLoader(DataLoader):
             Q_sentences_test, A_sentences_test, \
                 labels_test, idx_test_original = self._read_raw_xml_data_separate_sentences(self.data_path_validation)
 
-            #print("compute pairwise data")
-            #X_Q_new, X_A_1_new, X_A_2_new, labels_new = self._compute_pairwise_data(Q_sentences_train[:20], A_sentences_train[:20], labels_train[:20], idx_train[:20])
-            #print([item for item in zip(X_Q_new, X_A_1_new, X_A_2_new)])
+            Q_sentences_train = Q_sentences_train + Q_sentences_train_2
+            A_sentences_train = A_sentences_train + A_sentences_train_2
+            labels_train = labels_train + labels_train_2
+            idx_train = idx_train + idx_train_2
 
-            Q_padded_sentences = self._pad_sentences(Q_sentences_train + Q_sentences_train_2 + Q_sentences_test)
-            Q_sentences_train_padded = Q_padded_sentences[:len(Q_sentences_train) + len(Q_sentences_train_2)]
-            Q_sentences_test_padded = Q_padded_sentences[len(Q_sentences_train) + len(Q_sentences_train_2):]
+            Q_sentences_train = Q_sentences_train
+            A_sentences_train = A_sentences_train
+            labels_train = labels_train
+            idx_train = idx_train
 
-            A_padded_sentences = self._pad_sentences(A_sentences_train + A_sentences_train_2 + A_sentences_test)
-            A_sentences_train_padded = A_padded_sentences[:len(A_sentences_train) + len(A_sentences_train_2)]
-            A_sentences_test_padded = A_padded_sentences[len(A_sentences_train) + len(A_sentences_train_2):]
+            all_sentences = Q_sentences_train + A_sentences_train + Q_sentences_test + A_sentences_test
+            tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
+            tokenizer.fit_on_texts(all_sentences)
+            Q_sentences_train_sequences = tokenizer.texts_to_sequences(Q_sentences_train)
+            A_sentences_train_sequences = tokenizer.texts_to_sequences(A_sentences_train)
+            Q_sentences_test_sequences = tokenizer.texts_to_sequences(Q_sentences_test)
+            A_sentences_test_sequences = tokenizer.texts_to_sequences(A_sentences_test)
 
-            all_sentences = Q_sentences_train_padded + A_sentences_train_padded + Q_sentences_test_padded + A_sentences_test_padded
-            vocabulary, vocabulary_inv = self._build_vocab(all_sentences)
-            vocabulary_size = len(vocabulary_inv)
+            word_index = tokenizer.word_index
+            print('Found %s unique tokens.' % len(word_index))
 
-            # transform to vocabulary
-            Q_sentences_train_voc = [[vocabulary[word] for word in sentence] for sentence in Q_sentences_train_padded]
-            A_sentences_train_voc = [[vocabulary[word] for word in sentence] for sentence in A_sentences_train_padded]
+            Q_sentences_train_padded = pad_sequences(Q_sentences_train_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            A_sentences_train_padded = pad_sequences(A_sentences_train_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            Q_sentences_test_padded = pad_sequences(Q_sentences_test_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            A_sentences_test_padded = pad_sequences(A_sentences_test_sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
-            Q_sentences_test_voc = [[vocabulary[word] for word in sentence] for sentence in Q_sentences_test_padded]
-            A_sentences_test_voc = [[vocabulary[word] for word in sentence] for sentence in A_sentences_test_padded]
+            #labels_train = to_categorical(np.asarray(labels_train))
+            print('Shape of Q data tensor:', Q_sentences_train_padded.shape)
+            print('Shape of A data tensor:', A_sentences_train_padded.shape)
+            print('Shape of Q test tensor:', Q_sentences_test_padded.shape)
+            print('Shape of A test tensor:', A_sentences_test_padded.shape)
+            print('Shape of label tensor:', len(labels_train))
+            print('Shape of idx tensor:', len(idx_train))
 
             # Transform to pairwise data
             print("Transform to pairwise data")
             X_train_Q, X_train_A_1, X_train_A_2, y_train, idx_train = \
-                self._compute_pairwise_data(Q_sentences_train_voc, A_sentences_train_voc, labels_train + labels_train_2,
-                                            idx_train + idx_train_2)
+                self._compute_pairwise_data(Q_sentences_train_padded, A_sentences_train_padded, labels_train,
+                                            idx_train)
 
-            print(len([True for x in y_train if x == 1]), len([True for x in y_train if x == 0]))
+            print(len([True for x in y_train if x == 2]), len([True for x in y_train if x == 1]), len([True for x in y_train if x == 0]))
+
+            #y_train = to_categorical(np.asarray(y_train))
+            #print('Shape of label tensor:', y_train.shape)
 
             X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_test = \
-                self._compute_pairwise_data_test(Q_sentences_test_voc, A_sentences_test_voc, idx_test_original)
+                self._compute_pairwise_data_test(Q_sentences_test_padded, A_sentences_test_padded, idx_test_original)
 
-            print(len([True for x in y_test if x == 1]), len([True for x in y_test if x == 0]))
+            print(len([True for x in y_test if x == 2]), len([True for x in y_test if x == 1]), len([True for x in y_test if x == 0]))
 
             # Save info to file
             if save == True:
-                np.savez('data/train_data', X_train_Q=X_train_Q, X_train_A_1=X_train_A_1, X_train_A_2=X_train_A_2,
+                np.savez('data/word_train_data', X_train_Q=X_train_Q, X_train_A_1=X_train_A_1, X_train_A_2=X_train_A_2,
                          y_train=y_train)
-                np.savez('data/test_data.npz', X_test_Q=X_test_Q, X_test_A_1=X_test_A_1,
+                np.savez('data/word_test_data.npz', X_test_Q=X_test_Q, X_test_A_1=X_test_A_1,
                          X_test_A_2=X_test_A_2,
                          y_test=y_test)
-                np.savez('data/info_data.npz', idx_train=idx_train, idx_test=idx_test,
-                         idx_test_original=idx_test_original, vocabulary_size=vocabulary_size)
+                np.savez('data/word_info_data.npz', idx_train=idx_train, idx_test=idx_test,
+                         idx_test_original=idx_test_original)
+                with open('data/word_index.json', 'w') as fp:
+                    json.dump(word_index, fp)
 
         print('X_train_Q shape: {}'.format(X_train_Q.shape))
         print('X_train_A_1 shape: {}'.format(X_train_A_1.shape))
@@ -105,32 +133,36 @@ class PairwiseDataLoader(DataLoader):
         print('idx test original length: {}'.format(len(idx_test_original)))
 
         print("Done loading data pairwise")
-        return X_train_Q, X_train_A_1, X_train_A_2, y_train, X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_train, idx_test, idx_test_original, vocabulary_size
+        return X_train_Q, X_train_A_1, X_train_A_2, y_train, X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_train, idx_test, idx_test_original, word_index
+
+
 
     def get_data_separate_sentences_test(self, save=True):
         print("Load data pairwise")
 
         # Try loading from disk
-        if os.path.isfile('data/train_data_test.npz') and os.path.isfile('data/test_data_test.npz') \
-                and os.path.isfile('data/info_data_test.npz'):
+        if os.path.isfile('data/word_train_data_test.npz') and os.path.isfile('data/word_test_data_test.npz') \
+                and os.path.isfile('data/word_info_data_test.npz') and os.path.isfile('data/word_index_test.json'):
             print("Load data from cached files")
-            file_train = np.load('data/train_data.npz')
+            file_train = np.load('data/word_train_data_test.npz')
             X_train_Q = file_train['X_train_Q']
             X_train_A_1 = file_train['X_train_A_1']
             X_train_A_2 = file_train['X_train_A_2']
             y_train = file_train['y_train']
 
-            file_test = np.load('data/test_data.npz')
+            file_test = np.load('data/word_test_data_test.npz')
             X_test_Q = file_test['X_test_Q']
             X_test_A_1 = file_test['X_test_A_1']
             X_test_A_2 = file_test['X_test_A_2']
             y_test = file_test['y_test']
 
-            file_info = np.load('data/info_data.npz')
+            file_info = np.load('data/word_info_data_test.npz')
             idx_train = list(file_info['idx_train'])
             idx_test = list(file_info['idx_test'])
             idx_test_original = list(file_info['idx_test_original'])
-            vocabulary_size = int(file_info['vocabulary_size'])
+            with open('data/word_index_test.json', 'r') as fp:
+                line = fp.readline()
+                word_index = json.loads(line)
         else:
             print("Compute data and save to files")
             Q_sentences_train, A_sentences_train, \
@@ -138,61 +170,71 @@ class PairwiseDataLoader(DataLoader):
             Q_sentences_train_2, A_sentences_train_2, \
             labels_train_2, idx_train_2 = self._read_raw_xml_data_separate_sentences(self.data_path_train_2)
             Q_sentences_valid, A_sentences_valid, \
-            labels_valid, idx_valid = self._read_raw_xml_data_separate_sentences(self.data_path_validation)
+            labels_valid, idx_valid_original = self._read_raw_xml_data_separate_sentences(self.data_path_validation)
             Q_sentences_test, A_sentences_test, \
             labels_test, idx_test_original = self._read_raw_xml_data_separate_sentences(self.data_path_test)
 
-            # print("compute pairwise data")
-            # X_Q_new, X_A_1_new, X_A_2_new, labels_new = self._compute_pairwise_data(Q_sentences_train[:20], A_sentences_train[:20], labels_train[:20], idx_train[:20])
-            # print([item for item in zip(X_Q_new, X_A_1_new, X_A_2_new)])
+            Q_sentences_train = Q_sentences_train + Q_sentences_train_2 + Q_sentences_valid
+            A_sentences_train = A_sentences_train + A_sentences_train_2 + A_sentences_valid
+            labels_train = labels_train + labels_train_2 + labels_valid
+            idx_train = idx_train + idx_train_2 + idx_valid_original
 
-            Q_padded_sentences = self._pad_sentences(
-                Q_sentences_train + Q_sentences_train_2 + Q_sentences_valid + Q_sentences_test)
-            Q_sentences_train_padded = Q_padded_sentences[
-                                       :(len(Q_sentences_train) + len(Q_sentences_train_2) + len(Q_sentences_valid))]
-            Q_sentences_test_padded = Q_padded_sentences[
-                                      (len(Q_sentences_train) + len(Q_sentences_train_2) + len(Q_sentences_valid)):]
+            Q_sentences_train = Q_sentences_train
+            A_sentences_train = A_sentences_train
+            labels_train = labels_train
+            idx_train = idx_train
 
-            A_padded_sentences = self._pad_sentences(
-                A_sentences_train + A_sentences_train_2 + A_sentences_valid + A_sentences_test)
-            A_sentences_train_padded = A_padded_sentences[
-                                       :(len(A_sentences_train) + len(A_sentences_train_2) + len(A_sentences_valid))]
-            A_sentences_test_padded = A_padded_sentences[
-                                      (len(A_sentences_train) + len(A_sentences_train_2) + len(A_sentences_valid)):]
+            all_sentences = Q_sentences_train + A_sentences_train + Q_sentences_test + A_sentences_test
+            tokenizer = Tokenizer(num_words=MAX_NB_WORDS)
+            tokenizer.fit_on_texts(all_sentences)
+            Q_sentences_train_sequences = tokenizer.texts_to_sequences(Q_sentences_train)
+            A_sentences_train_sequences = tokenizer.texts_to_sequences(A_sentences_train)
+            Q_sentences_test_sequences = tokenizer.texts_to_sequences(Q_sentences_test)
+            A_sentences_test_sequences = tokenizer.texts_to_sequences(A_sentences_test)
 
-            all_sentences = Q_sentences_train_padded + A_sentences_train_padded + Q_sentences_test_padded + A_sentences_test_padded
-            vocabulary, vocabulary_inv = self._build_vocab(all_sentences)
-            vocabulary_size = len(vocabulary_inv)
+            word_index = tokenizer.word_index
+            print('Found %s unique tokens.' % len(word_index))
 
-            # transform to vocabulary
-            Q_sentences_train_voc = [[vocabulary[word] for word in sentence] for sentence in Q_sentences_train_padded]
-            A_sentences_train_voc = [[vocabulary[word] for word in sentence] for sentence in A_sentences_train_padded]
+            Q_sentences_train_padded = pad_sequences(Q_sentences_train_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            A_sentences_train_padded = pad_sequences(A_sentences_train_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            Q_sentences_test_padded = pad_sequences(Q_sentences_test_sequences, maxlen=MAX_SEQUENCE_LENGTH)
+            A_sentences_test_padded = pad_sequences(A_sentences_test_sequences, maxlen=MAX_SEQUENCE_LENGTH)
 
-            Q_sentences_test_voc = [[vocabulary[word] for word in sentence] for sentence in Q_sentences_test_padded]
-            A_sentences_test_voc = [[vocabulary[word] for word in sentence] for sentence in A_sentences_test_padded]
+            # labels_train = to_categorical(np.asarray(labels_train))
+            print('Shape of Q data tensor:', Q_sentences_train_padded.shape)
+            print('Shape of A data tensor:', A_sentences_train_padded.shape)
+            print('Shape of Q test tensor:', Q_sentences_test_padded.shape)
+            print('Shape of A test tensor:', A_sentences_test_padded.shape)
+            print('Shape of label tensor:', len(labels_train))
+            print('Shape of idx tensor:', len(idx_train))
 
             # Transform to pairwise data
             print("Transform to pairwise data")
             X_train_Q, X_train_A_1, X_train_A_2, y_train, idx_train = \
-                self._compute_pairwise_data(Q_sentences_train_voc, A_sentences_train_voc, labels_train + labels_train_2 + labels_valid,
-                                            idx_train + idx_train_2 + idx_valid)
+                self._compute_pairwise_data(Q_sentences_train_padded, A_sentences_train_padded, labels_train,
+                                            idx_train)
 
             print(len([True for x in y_train if x == 1]), len([True for x in y_train if x == 0]))
 
+            # y_train = to_categorical(np.asarray(y_train))
+            # print('Shape of label tensor:', y_train.shape)
+
             X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_test = \
-                self._compute_pairwise_data_test(Q_sentences_test_voc, A_sentences_test_voc, idx_test_original)
+                self._compute_pairwise_data_test(Q_sentences_test_padded, A_sentences_test_padded, idx_test_original)
 
             print(len([True for x in y_test if x == 1]), len([True for x in y_test if x == 0]))
 
             # Save info to file
             if save == True:
-                np.savez('data/train_data_test', X_train_Q=X_train_Q, X_train_A_1=X_train_A_1, X_train_A_2=X_train_A_2,
+                np.savez('data/word_train_data_test', X_train_Q=X_train_Q, X_train_A_1=X_train_A_1, X_train_A_2=X_train_A_2,
                          y_train=y_train)
-                np.savez('data/test_data_test.npz', X_test_Q=X_test_Q, X_test_A_1=X_test_A_1,
+                np.savez('data/word_test_data_test.npz', X_test_Q=X_test_Q, X_test_A_1=X_test_A_1,
                          X_test_A_2=X_test_A_2,
                          y_test=y_test)
-                np.savez('data/info_data_test.npz', idx_train=idx_train, idx_test=idx_test,
-                         idx_test_original=idx_test_original, vocabulary_size=vocabulary_size)
+                np.savez('data/word_info_data_test.npz', idx_train=idx_train, idx_test=idx_test,
+                         idx_test_original=idx_test_original)
+                with open('data/word_index_test.json', 'w') as fp:
+                    json.dump(word_index, fp)
 
         print('X_train_Q shape: {}'.format(X_train_Q.shape))
         print('X_train_A_1 shape: {}'.format(X_train_A_1.shape))
@@ -207,7 +249,8 @@ class PairwiseDataLoader(DataLoader):
         print('idx test original length: {}'.format(len(idx_test_original)))
 
         print("Done loading data pairwise")
-        return X_train_Q, X_train_A_1, X_train_A_2, y_train, X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_train, idx_test, idx_test_original, vocabulary_size
+        return X_train_Q, X_train_A_1, X_train_A_2, y_train, X_test_Q, X_test_A_1, X_test_A_2, y_test, idx_train, idx_test, idx_test_original, word_index
+
 
     #### HELPER FUNCTIONS ####
 
@@ -295,17 +338,15 @@ class PairwiseDataLoader(DataLoader):
         xml = tree.getroot()
         for thread in xml:
             question_info = dict()
-            question_sentence = []
+            question_sentence = ""
             for rel in thread:
                 if rel.tag == "RelQuestion":
                     question_info['q_id'] = rel.attrib['RELQ_ID']
-                    question_sentence.extend(self.clean_str(rel.attrib['RELQ_CATEGORY']).split(" "))
-                    question_sentence.extend(self.clean_str(str(rel[0].text)).split(" "))
-                    question_sentence.extend(self.clean_str(str(rel[1].text)).split(" "))
+                    question_sentence = question_sentence + "_" + rel.attrib['RELQ_CATEGORY'] +  "_" + str(rel[0].text) + "_" + str(rel[1].text)
                 elif rel.tag == "RelComment":
                     question_answer_info = dict(question_info)
                     question_answer_info['a_id'] = rel.attrib['RELC_ID']
-                    answer_sentence = self.clean_str(str(rel[0].text)).split(" ")
+                    answer_sentence = str(rel[0].text)
                     Q_sentences.append(question_sentence)
                     A_sentences.append(answer_sentence)
                     answer_label = label_to_int[rel.attrib['RELC_RELEVANCE2RELQ'].lower()]

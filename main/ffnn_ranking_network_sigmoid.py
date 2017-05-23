@@ -20,7 +20,7 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
         self.data_loader = data_loader_pairwise
         self.model = None
 
-    def build_network(self, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50):
+    def build_network(self, label_size, input_size_Q, input_size_A, XQ_, XA1_, XA2_, keep_prob_, input_units=50):
 
         # setup input layers
 
@@ -80,7 +80,7 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
         #     hidden3_dropout = tf.nn.dropout(hidden3, keep_prob)
 
         with tf.name_scope("output_layer"):
-            output_units = 1
+            output_units = label_size
             W = tf.Variable(tf.truncated_normal(shape=[hidden2_units, output_units],
                                                 stddev=1.0 / math.sqrt(float(input_size_Q) + float(input_size_A))),
                             name="weights")
@@ -268,7 +268,6 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
 
         # Calculate the confidence scores using the rank
         conf_scores = self.rank_data(predictions, test_idx, test_idx_org)
-        predictions_for_writing = np.array([[0., 1.] for _ in range(len(conf_scores))])
         self.write_predictions_to_file(predictions_for_writing, conf_scores, test_idx_org, prediction_filename)
 
     def rank_data(self, predictions, test_idx, test_idx_org):
@@ -283,9 +282,26 @@ class FFNNRankingNetworkSigmoid(FFNNRankingNetwork):
                                 ((item['q_id'] == index['q_id']) and (item['a_id'] == index['a_id']))]
             rank = len([predictions[ind] for ind in answers_idx_list if predictions[ind] == 1])
             #print("Q_id: {}, A_id: {}, rank: {}".format(q_id, a_id, rank))
-            conf_scores.append(1/(1+rank))
+            conf_scores.append(rank/9.)
 
         return conf_scores
+
+    def write_predictions_to_file(self, conf_scores, validation_ids, filename):
+
+        def write_line(filename, line):
+            f = open(filename, 'a')
+            f.write(line)
+            f.close()
+
+        def clean_file(filename):
+            f = open(filename, 'w')
+            f.close()
+
+        if os.path.exists(filename):
+            clean_file(filename)
+        line = "{} \t {} \t 0 \t {} \t {} \n"
+        for i, elem in enumerate(validation_ids):
+            write_line(filename, line.format(elem['q_id'], elem['a_id'], conf_scores[i], "true"))
 
 
 
